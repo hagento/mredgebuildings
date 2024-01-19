@@ -33,11 +33,14 @@ calcHDDCDD <- function(bait=FALSE) {
   
   mappingFile <- "HDDCDD_Test/single-gcm_test.csv"
   
+  mrDir <- "/p/tmp/krekeler/hagento/dev/mredgebuildings"
+  
+  
   
   # COMPUTATION SETTINGS--------------------------------------------------------
   
   # number of cores to be considered in parallel computing
-  ncores <- 4
+  ncores <- 16
   
 
   # FUNCTIONS-------------------------------------------------------------------
@@ -501,14 +504,19 @@ calcHDDCDD <- function(bait=FALSE) {
 
 
   # READ-IN DATA----------------------------------------------------------------
-
-  # cells -> country
-  countries <- readSource("ISIMIP", subtype = "CountryMask", convert = FALSE)
-  
   
   # list of files that are processed
-  files <- toolGetMapping(mappingFile, type = "sectoral") %>%
-    filter(!is.na(.data[["start"]]))
+  files <- toolGetMapping(mappingFile, type = "sectoral", where = mrDir) %>%
+    filter(variable != "")
+  
+  # cluster adapt
+  # files <- read.csv(file.path("../../input", mappingFile)) %>%
+  #   filter(!is.na(.data[["start"]]))
+  
+  # cells -> country
+  fCM <- file.path(files[files$variable == "CountryMask", "folder"],
+                   files[files$variable == "CountryMask", "file"])
+  countries <- readSource("ISIMIP", subtype = fCM, convert = FALSE)
 
 
 
@@ -528,7 +536,7 @@ calcHDDCDD <- function(bait=FALSE) {
         as.list(),
       function(s) {
         fpop <- files %>% filter(ssp == s, variable == "pop")
-        pop <- readSource("ISIMIP", subtype = fpop$file,
+        pop <- readSource("ISIMIP", subtype = file.path(fpop$folder, fpop$file),
                           convert = FALSE)
         do.call(
           "rbind",
@@ -555,14 +563,20 @@ calcHDDCDD <- function(bait=FALSE) {
                       lapply(
                         seq(nrow(filter(f, f$variable == "tas"))),
                         function(n) {
-                          ftas <- f[f$variable == "tas" & f$gcm == m,][[n, "file"]]
+                          ftas <- file.path(f[f$variable == "tas" & f$gcm == m,][[n, "folder"]],
+                                            f[f$variable == "tas" & f$gcm == m,][[n, "file"]])
                           
                           print(paste("Processing temperature file:"), ftas)
 
                           if(bait) {
-                            frsds <- f[f$variable == "rsds",][[n, "file"]]
-                            fsfc  <- f[f$variable == "sfc",][[n, "file"]]
-                            fhuss <- f[f$variable == "huss",][[n, "file"]]
+                            frsds <- file.path(f[f$variable == "rsds",][[n, "folder"]],
+                                               f[f$variable == "rsds",][[n, "file"]])
+                            
+                            fsfc  <- file.path(f[f$variable == "sfc",][[n, "folder"]],
+                                               f[f$variable == "sfc",][[n, "file"]])
+                            
+                            fhuss <- file.path(f[f$variable == "huss",][[n, "folder"]],
+                                               f[f$variable == "huss",][[n, "file"]])
 
                             hddcddCell <- calcStackHDDCDD(ftas,
                                                           t_lim,
@@ -619,8 +633,8 @@ calcHDDCDD <- function(bait=FALSE) {
     unite("scenario", .data[["ssp"]], .data[["rcp"]], sep = "_")
 
   # save data as csv
-  optFolder <- getConfig("outputfolder")
-  write.csv(data, file = file.path(optFolder, "hddcdd.csv"), row.names = FALSE)
+  # optFolder <- getConfig("outputfolder")
+  # write.csv(data, file = file.path(optFolder, "hddcdd.csv"), row.names = FALSE)
 
 
   return(list(x = data))
