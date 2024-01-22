@@ -6,13 +6,13 @@
 #'
 #' @importFrom stringr str_split
 #'
-#' NOTE:
-#' folder structure in inputdata/sources/ISIMIPbuildings is expected to be:
-#'    country masks : var/
-#'    population :    var/scenario
-#'    other :         var/scenario/model
-#'    
-#' NOTE: currently, this function only reads data from ISIMIP3b
+# NOTE:
+# folder structure in inputdata/sources/ISIMIPbuildings is expected to be:
+#    country masks : var/
+#    population :    var/scenario
+#    other :         var/scenario/model
+#    
+# NOTE: currently, this function only reads data from ISIMIP3b
 
 
 readISIMIPbuildings <- function(subtype) {
@@ -27,7 +27,7 @@ readISIMIPbuildings <- function(subtype) {
   splitSubtype <- function(subtype) {
     vars <- list()
     
-    if ("countrymask" %in% subtype) {
+    if (grepl("countrymask", subtype)) {
       vars[["variable"]] = "countrymask"
     }
     
@@ -38,7 +38,7 @@ readISIMIPbuildings <- function(subtype) {
       vars[["scenario"]] <- subSplit[[2]]
     }
     
-    else if (any(baitVars %in% subtype)) {
+    else if (any(sapply(baitVars, grepl, x = subtype))) {
       subSplit <- str_split(subtype, "_") %>% unlist()
       
       vars[["variable"]] <- subSplit[[5]]
@@ -55,25 +55,24 @@ readISIMIPbuildings <- function(subtype) {
   # PROCESS DATA----------------------------------------------------------------
   
   vars <- splitSubtype(subtype)
-  cwd <- getwd()
   
   if (vars[["variable"]] == "countrymask"){
-    setwd("countrymask")
-    varNames <- names(ncdf4::nc_open(subtype)[["var"]])
+    fpath <- file.path("countrymasks", subtype)
+    varNames <- names(ncdf4::nc_open(fpath)[["var"]])
     countries <- list()
     for (var in varNames) {
-      countries[[var]] <- raster::brick(files, varname = var)
+      countries[[var]] <- suppressWarnings(raster::brick(fpath, varname = var))
     }
     r <- raster::brick(countries)
-    names(r) <- gsub("m_", "", vars)
-    setwd(cwd)
+    names(r) <- gsub("m_", "", varNames)
+    
     x <- list(x = r, class = "RasterBrick")
   }
   
   
   if (vars[["variable"]] == "population") {
-    setwd(file.path(vars[["variable"]], vars[["scenario"]]))
-    r <- raster::brick(subtype)
+    fpath <- file.path(vars[["variable"]], vars[["scenario"]], subtype)
+    r <- raster::brick(fpath)
     
     subtype <- gsub(".nc4", "", subtype)
     
@@ -93,16 +92,15 @@ readISIMIPbuildings <- function(subtype) {
       raster::extent(r) <- round(raster::extent(r))
     }
     
-    setwd(cwd)
     x <- list(x = raster::brick(r), class = "RasterBrick")
   }
   
   
   if (any(vars[["variable"]] %in% baitVars)) {
-    setwd(file.path(vars[["variable"]], vars[["scenario"]], vars[["model"]]))
-    r <- raster::brick(subtype, src = "") %>%
+    fpath <- file.path(vars[["variable"]], vars[["scenario"]], vars[["model"]], subtype)
+    r <- raster::brick(fpath, src = "") %>%
       round(digits=1)
-    setwd(cwd)
+    
     x <- list(x = r, class = "RasterBrick")
   }
   
