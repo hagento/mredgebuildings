@@ -1,0 +1,65 @@
+#' convert ISIMIP data for mredgebuildings
+#' 
+#' @param x MAgPIE object on cellular level
+#' @param subtype filename
+#' 
+#' @importFrom stringr str_detect
+#' 
+#' @author Hagen Tockhorn
+#' 
+#' @return rasterBrick object
+
+convertISIMIPbuildings <- function(x, subtype) {
+  
+  # FUNCTIONS-------------------------------------------------------------------
+  
+  # fill dates for unnamed data
+  fillDates <- function(r, filename, pop = FALSE) {
+    if (grepl(".nc|.nc4", filename)) {
+      filename <- gsub(".nc|.nc4", "", filename)}
+    
+    yStart <- stringr::str_sub(filename, -9, -6)
+    n <- raster::nlayers(r)
+    
+    if (!pop) {
+      dStart <- as.Date(paste0(yStart, "-1-1"))
+      dates <- seq.Date(dStart, by = "day", length.out = n)
+    } else {
+      dates <- seq.Date(yStart, by = "year", length.out = n)
+    }
+    
+    # fill dates
+    names(r) <- dates
+    return(r)
+  }
+  
+  
+  # PARAMETERS------------------------------------------------------------------
+  
+  # variable units
+  unitMapping <- list(
+    "tas"     = "K",
+    "rsds"    = "Wm-2",
+    "sfcWind" = "ms-1",
+    "huss"    = "kgkg-1"
+  )
+  
+  edgeVars <- c("tas", "rsds", "sfcwind", "huss", "population")
+  
+  
+  # PROCESS DATA----------------------------------------------------------------
+  
+  if (grepl(paste(edgeVars, collapse = "|"), subtype)) {
+    var <- edgeVars[str_detect(subtype, edgeVars)]
+    
+    if (var == "pop") {
+      x <- fillDates(x, subtype, pop = TRUE)
+    } else {
+      x <- fillDates(x, subtype)
+    }
+  }
+    
+    return(list(x = x,
+                class = "RasterBrick",
+                unit = unitMapping[var]))
+}

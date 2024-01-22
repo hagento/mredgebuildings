@@ -1,0 +1,7 @@
+gcm,rcp,ssp,variable,start,end,folder,file
+,historical,historical,pop,1901,2014,/p/projects/isimip/isimip/ISIMIP3b/InputData/socioeconomic/pop/histsoc,population_histsoc_30arcmin_annual_1901_2014.nc
+,,,CountryMask,,,/p/projects/isimip/isimip/ISIMIP3b/InputData/geo_conditions/countrymasks,countrymasks.nc
+CNRM-CM6-1,historical,historical,tas,1991,2000,/p/projects/isimip/isimip/ISIMIP3b/SecondaryInputData/climate/atmosphere/bias-adjusted/global/daily/historical/CNRM-CM6-1,cnrm-cm6-1_r1i1p1f2_w5e5_historical_tas_global_daily_1991_2000.nc
+CNRM-CM6-1,historical,historical,sfc,1991,2000,/p/projects/isimip/isimip/ISIMIP3b/SecondaryInputData/climate/atmosphere/bias-adjusted/global/daily/historical/CNRM-CM6-1,cnrm-cm6-1_r1i1p1f2_w5e5_historical_sfcwind_global_daily_1991_2000.nc
+CNRM-CM6-1,historical,historical,rsds,1991,2000,/p/projects/isimip/isimip/ISIMIP3b/SecondaryInputData/climate/atmosphere/bias-adjusted/global/daily/historical/CNRM-CM6-1,cnrm-cm6-1_r1i1p1f2_w5e5_historical_rsds_global_daily_1991_2000.nc
+CNRM-CM6-1,historical,historical,huss,1991,2000,/p/projects/isimip/isimip/ISIMIP3b/SecondaryInputData/climate/atmosphere/bias-adjusted/global/daily/historical/CNRM-CM6-1,cnrm-cm6-1_r1i1p1f2_w5e5_historical_huss_global_daily_1991_2000.nc

@@ -31,9 +31,9 @@ calcHDDCDD <- function(bait=FALSE) {
   
   # FILE MAPPING----------------------------------------------------------------
   
-  mappingFile <- "HDDCDD_Test/single-gcm_test.csv"
+  # mappingFile <- "single-gcm_test.csv"
   
-  mrDir <- "/p/tmp/krekeler/hagento/dev/mredgebuildings"
+  mappingFile <- "cluster_test.csv"
   
   
   
@@ -86,11 +86,11 @@ calcHDDCDD <- function(bait=FALSE) {
     }
     else {
       input <- list(
-        "rsds" = readSource("ISIMIP", subtype = frsds, convert = TRUE) %>%
+        "rsds" = readSource("ISIMIPbuildings", subtype = frsds, convert = TRUE) %>%
           fillDates(frsds),
-        "sfc"  = readSource("ISIMIP", subtype = fsfc, convert = TRUE) %>%
+        "sfc"  = readSource("ISIMIPbuildings", subtype = fsfc, convert = TRUE) %>%
           fillDates(fsfc),
-        "huss" = readSource("ISIMIP", subtype = fhuss, convert = TRUE) %>%
+        "huss" = readSource("ISIMIPbuildings", subtype = fhuss, convert = TRUE) %>%
           fillDates(fhuss))
       return(input)
     }
@@ -398,7 +398,7 @@ calcHDDCDD <- function(bait=FALSE) {
                               wBAIT = NULL) {
     
     # read cellular temperature
-    temp <- readSource("ISIMIP", subtype = file, convert = TRUE) %>%
+    temp <- readSource("ISIMIPbuildings", subtype = file, convert = TRUE) %>%
       fillDates(file)
 
     dates <- names(temp)
@@ -506,17 +506,12 @@ calcHDDCDD <- function(bait=FALSE) {
   # READ-IN DATA----------------------------------------------------------------
   
   # list of files that are processed
-  files <- toolGetMapping(mappingFile, type = "sectoral", where = mrDir) %>%
+  files <- toolGetMapping(mappingFile, type = "sectoral", where = "mappingfolder") %>%
     filter(variable != "")
   
-  # cluster adapt
-  # files <- read.csv(file.path("../../input", mappingFile)) %>%
-  #   filter(!is.na(.data[["start"]]))
-  
   # cells -> country
-  fCM <- file.path(files[files$variable == "CountryMask", "folder"],
-                   files[files$variable == "CountryMask", "file"])
-  countries <- readSource("ISIMIP", subtype = fCM, convert = FALSE)
+  fCM <- file.path(files[files$variable == "CountryMask", "file"])
+  countries <- readSource("ISIMIPbuildings", subtype = fCM, convert = FALSE)
 
 
 
@@ -536,7 +531,7 @@ calcHDDCDD <- function(bait=FALSE) {
         as.list(),
       function(s) {
         fpop <- files %>% filter(ssp == s, variable == "pop")
-        pop <- readSource("ISIMIP", subtype = file.path(fpop$folder, fpop$file),
+        pop <- readSource("ISIMIPbuildings", subtype = fpop$file,
                           convert = FALSE)
         do.call(
           "rbind",
@@ -569,14 +564,11 @@ calcHDDCDD <- function(bait=FALSE) {
                           print(paste("Processing temperature file:"), ftas)
 
                           if(bait) {
-                            frsds <- file.path(f[f$variable == "rsds",][[n, "folder"]],
-                                               f[f$variable == "rsds",][[n, "file"]])
+                            frsds <- file.path(f[f$variable == "rsds",][[n, "file"]])
                             
-                            fsfc  <- file.path(f[f$variable == "sfc",][[n, "folder"]],
-                                               f[f$variable == "sfc",][[n, "file"]])
+                            fsfc  <- file.path(f[f$variable == "sfc",][[n, "file"]])
                             
-                            fhuss <- file.path(f[f$variable == "huss",][[n, "folder"]],
-                                               f[f$variable == "huss",][[n, "file"]])
+                            fhuss <- file.path(f[f$variable == "huss",][[n, "file"]])
 
                             hddcddCell <- calcStackHDDCDD(ftas,
                                                           t_lim,

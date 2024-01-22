@@ -5,6 +5,7 @@
 #' @author Hagen Tockhorn
 #'
 #' @importFrom stringr str_split
+#' @importFrom raster brick dropLayer res extent aggregate
 #'
 # NOTE:
 # folder structure in inputdata/sources/ISIMIPbuildings is expected to be:
@@ -61,9 +62,9 @@ readISIMIPbuildings <- function(subtype) {
     varNames <- names(ncdf4::nc_open(fpath)[["var"]])
     countries <- list()
     for (var in varNames) {
-      countries[[var]] <- suppressWarnings(raster::brick(fpath, varname = var))
+      countries[[var]] <- suppressWarnings(brick(fpath, varname = var))
     }
-    r <- raster::brick(countries)
+    r <- brick(countries)
     names(r) <- gsub("m_", "", varNames)
     
     x <- list(x = r, class = "RasterBrick")
@@ -72,16 +73,16 @@ readISIMIPbuildings <- function(subtype) {
   
   if (vars[["variable"]] == "population") {
     fpath <- file.path(vars[["variable"]], vars[["scenario"]], subtype)
-    r <- raster::brick(fpath)
+    r <- suppressWarnings(brick(fpath))
     
     subtype <- gsub(".nc4", "", subtype)
     
     # rename years
-    years <- strsplit(tail(strsplit(subtype, "_")[[1]], 1), "-")[[1]]
+    years <- tail(strsplit(subtype, "_")[[1]], 2)
     names(r) <- paste0("y", years[1]:years[2])
     
     # filter relevant years
-    r <- raster::dropLayer(
+    r <- dropLayer(
       r, as.numeric(substr(names(r), 2, 5)) < firstHistYear)
     
     # aggregate to common resolution of 0.5 deg
@@ -92,13 +93,13 @@ readISIMIPbuildings <- function(subtype) {
       raster::extent(r) <- round(raster::extent(r))
     }
     
-    x <- list(x = raster::brick(r), class = "RasterBrick")
+    x <- list(x = brick(r), class = "RasterBrick")
   }
   
   
-  if (any(vars[["variable"]] %in% baitVars)) {
+  else if (any(vars[["variable"]] %in% baitVars)) {
     fpath <- file.path(vars[["variable"]], vars[["scenario"]], vars[["model"]], subtype)
-    r <- raster::brick(fpath, src = "") %>%
+    r <- suppressWarnings(brick(fpath, src = "")) %>%
       round(digits=1)
     
     x <- list(x = r, class = "RasterBrick")
