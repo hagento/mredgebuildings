@@ -41,6 +41,8 @@ calcHDDCDD <- function(bait=FALSE) {
   
   # number of cores to be considered in parallel computing
   ncores <- 16
+
+  #raster::rasterOptions(tmpdir = "/p/tmp/hagento/rastertmp")
   
 
   # FUNCTIONS-------------------------------------------------------------------
@@ -396,7 +398,9 @@ calcHDDCDD <- function(bait=FALSE) {
                               fsfc  = NULL,
                               fhuss = NULL,
                               wBAIT = NULL) {
-    
+   
+    #raster::removeTmpFiles()
+ 
     # read cellular temperature
     temp <- readSource("ISIMIPbuildings", subtype = file, convert = TRUE) %>%
       fillDates(file)
@@ -558,10 +562,9 @@ calcHDDCDD <- function(bait=FALSE) {
                       lapply(
                         seq(nrow(filter(f, f$variable == "tas"))),
                         function(n) {
-                          ftas <- file.path(f[f$variable == "tas" & f$gcm == m,][[n, "folder"]],
-                                            f[f$variable == "tas" & f$gcm == m,][[n, "file"]])
+                          ftas <- file.path(f[f$variable == "tas" & f$gcm == m,][[n, "file"]])
                           
-                          print(paste("Processing temperature file:"), ftas)
+                          print(paste("Processing temperature file:", ftas))
 
                           if(bait) {
                             frsds <- file.path(f[f$variable == "rsds",][[n, "file"]])

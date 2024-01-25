@@ -21,6 +21,8 @@ readISIMIPbuildings <- function(subtype) {
   # PARAMETERS------------------------------------------------------------------
   
   baitVars <- c("tas", "sfcwind", "rsds", "huss")
+
+  firstHistYear <- 1960
   
   
   # FUNCTIONS-------------------------------------------------------------------
@@ -71,11 +73,11 @@ readISIMIPbuildings <- function(subtype) {
   }
   
   
-  if (vars[["variable"]] == "population") {
+  else if (vars[["variable"]] == "population") {
     fpath <- file.path(vars[["variable"]], vars[["scenario"]], subtype)
     r <- suppressWarnings(brick(fpath))
     
-    subtype <- gsub(".nc4", "", subtype)
+    subtype <- gsub(".nc", "", subtype)
     
     # rename years
     years <- tail(strsplit(subtype, "_")[[1]], 2)
