@@ -42,7 +42,8 @@ calcHDDCDD <- function(bait=FALSE) {
   # number of cores to be considered in parallel computing
   ncores <- 16
 
-  #raster::rasterOptions(tmpdir = "/p/tmp/hagento/rastertmp")
+  raster::rasterOptions()
+  #raster::rasterOptions(tmpdir = "/p/tmp/hagento/.Rtmp")
   
 
   # FUNCTIONS-------------------------------------------------------------------
@@ -337,9 +338,9 @@ calcHDDCDD <- function(bait=FALSE) {
 
 
   # fill HDD/CDD from factors for given ambient/limit temperature combination
-  calcCellHDDCDD <- function(.temp, .typeDD, .tlim, factors) {
+  calcCellHDDCDD <- function(temp, .typeDD, .tlim, factors) {
     # extract years
-    years <- names(.temp) %>%
+    years <- names(temp) %>%
       substr(2, 5) %>%
       as.numeric()
 
@@ -354,7 +355,7 @@ calcHDDCDD <- function(bait=FALSE) {
 
 
     # swap ambient temperature values with corresponding DD values
-    hddcdd <- raster::reclassify(.temp, factors)
+    hddcdd <- raster::reclassify(temp, factors)
 
     # aggregate to yearly HDD/CDD [K.d/a]
     hddcdd <- raster::stackApply(hddcdd, years, fun = sum)
@@ -525,9 +526,9 @@ calcHDDCDD <- function(bait=FALSE) {
   hddcddFactor <- calcHDDCDDFactors(tlow=-50.15, tup=49.85, t_lim, tamb_std, tlim_std)
 
   # loop: GCM results for ambient temperature (SSP scenarios)
-  hddcdd_multi <- do.call(
+  hddcdd <- do.call(
     "rbind",
-    mclapply( # ssp iteration
+    lapply( # ssp iteration
       ssps <-  files %>%
         filter(.data[["variable"]] == "tas") %>%
         select("ssp") %>%
@@ -605,8 +606,8 @@ calcHDDCDD <- function(bait=FALSE) {
             }
           )
         )
-      }, 
-      mc.cores = ncores
+      }#, 
+     # mc.cores = ncores
     )
   )
 
@@ -626,6 +627,12 @@ calcHDDCDD <- function(bait=FALSE) {
     mutate(period = gsub("y", "", .data[["period"]])) %>%
     unite("variable", .data[["variable"]], .data[["tlim"]], sep = "_") %>%
     unite("scenario", .data[["ssp"]], .data[["rcp"]], sep = "_")
+
+  # prepare output
+  data <- data %>%
+    as.quitte() %>%
+    as.magpie() %>%
+    toolCountryFill()
 
   # save data as csv
   # optFolder <- getConfig("outputfolder")
