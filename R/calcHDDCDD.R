@@ -4,6 +4,7 @@
 #'   or bais-adjusted internal temperature (BAIT), driver for space heating and
 #'   cooling demand in buildings
 #'
+#' @param mappingFile data.frame containing input data file names and directories
 #' @param bait specify use of raw temperature or BAIT
 #'
 #' @return magpie object of heating and cooling degree days
@@ -16,35 +17,18 @@
 #' }
 #'
 #' @importFrom madrat getConfig
-#' @importFrom raster brick cellStats subset stackApply getValues ncell
-#'   xyFromCell res aggregate nlayers beginCluster endCluster
+#' @importFrom raster cellStats
 #' @importFrom ncdf4 nc_open
 #' @importFrom tidyr %>%
 #' @importFrom dplyr mutate
 #' @importFrom rlang .data
 #' @importFrom pracma integral2
 #' @importFrom stringr str_sub
-#' @importFrom parallel mclapply
+#' @importFrom terra app nlyr tapp subset rast classify time
 
 
-calcHDDCDD <- function(bait=FALSE) {
-  
-  # FILE MAPPING----------------------------------------------------------------
-  
-  # mappingFile <- "single-gcm_test.csv"
-  
-  mappingFile <- "cluster_test.csv"
-  
-  
-  
-  # COMPUTATION SETTINGS--------------------------------------------------------
-  
-  # number of cores to be considered in parallel computing
-  ncores <- 16
+calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
-  raster::rasterOptions()
-  #raster::rasterOptions(tmpdir = "/p/tmp/hagento/.Rtmp")
-  
 
   # FUNCTIONS-------------------------------------------------------------------
 
@@ -58,13 +42,13 @@ calcHDDCDD <- function(bait=FALSE) {
     if (bait) {
       dStart <- as.Date(stringr::str_sub(filename, -17, -10),
                         format = "%Y%m%d")
-      n <- raster::nlayers(r)
+      n <- nlyr(r)
       dates <- seq.Date(dStart, by = "day", length.out = n)
     }
     else {
       yStart <- stringr::str_sub(filename, -9, -6)
       dStart <- as.Date(paste0(yStart, "-1-1"))
-      n <- raster::nlayers(r)
+      n <- nlyr(r)
 
       dates <- seq.Date(dStart, by = "day", length.out = n)
     }
@@ -81,10 +65,10 @@ calcHDDCDD <- function(bait=FALSE) {
       # optional: calculate daily means over years to fill missing data
       baitInputMean <- sapply(
         names(baitInput), function(var) {
-          mean <- raster::stackApply(baitInput[[var]],
-                                     unique(substr(names(baitInput[[var]]), 7, 11)),
-                                     fun = "mean")
-          names(mean) <- substr(names(mean), 7, 11)
+          mean <- tapp(baitInput[[var]],
+                              unique(substr(names(baitInput[[var]]), 6, 11)),
+                              fun = "mean")
+          names(mean) <- gsub("\\.", "-", substr(names(mean), 2, 6))
           return(mean)})
     }
     else {
@@ -102,7 +86,7 @@ calcHDDCDD <- function(bait=FALSE) {
 
   #check if time period is congruent and adapt if necessary
   checkDates <- function(temp, baitInput) {
-    dates_t <- substr(names(temp), 2, 11)
+    dates_t <- names(temp)
 
     baitInput <- sapply(names(baitInput), function(var) {
       # fill missing data with means from previous years
@@ -112,7 +96,7 @@ calcHDDCDD <- function(bait=FALSE) {
 
       tmp <- baitInput[[var]]
 
-      dates_b <- substr(names(tmp), 2, 11)
+      dates_b <- names(tmp)
 
       datesFill <- setdiff(dates_t, dates_b)        # dates to fill up
       daysFill  <- unique(substr(datesFill, 6, 11))
@@ -121,20 +105,20 @@ calcHDDCDD <- function(bait=FALSE) {
       keep <- ifelse(length(datesKeep) > 0, TRUE, FALSE)
 
       if (keep) {
-        tmp <- raster::subset(tmp, paste0("X", datesKeep))
-        names(tmp) <- paste0("X", datesKeep)
+        tmp <- subset(tmp, datesKeep)
+        names(tmp) <- datesKeep
         }
 
       if (length(daysFill) > 0) {
         baitInputMean <- calcBaitInput(mean = TRUE, baitInput = baitInput)
 
         # fill up missing dates with yearly-average value for specific day/cell
-        baitInputFill <- raster::brick(lapply(
+        baitInputFill <- rast(lapply(
           daysFill, function(d){
             print(d)
             idx <- which(grepl(d, stringr::str_sub(datesFill, -5, -1)))
-            r <- raster::brick(replicate(length(idx),
-                                         baitInputMean[[var]][[paste0("X",d)]]))
+            r <- rast(replicate(length(idx),
+                                         baitInputMean[[var]][[d]]))
             names(r) <- datesFill[idx]
             return(r)
             }
@@ -142,11 +126,11 @@ calcHDDCDD <- function(bait=FALSE) {
         )
 
         # concatenate data
-        if (keep) {tmp <- raster::brick(list(tmp, baitInputFill))}
+        if (keep) {tmp <- rast(list(tmp, baitInputFill))}
         else      {tmp <- baitInputFill}
 
         # re-order dates
-        tmp <- raster::brick(tmp[[order(names(tmp))]])
+        tmp <- rast(tmp[[order(names(tmp))]])
       }
 
 
@@ -174,12 +158,34 @@ calcHDDCDD <- function(bait=FALSE) {
                        h = c(1.1, 0.06),
                        t = c(16))}
 
-    if      (type == "s") {return(params[[1]] + params[[2]]*t)}
-    else if (type == "w") {return(params[[1]] - params[[2]]*t)}
-    else if (type == "h") {return(exp(params[[1]] + params[[2]]*t))}
-    else if (type == "t") {return(params[[1]])}
+    if      (type == "s") {return(app(t, fun = function(t) {params[[1]] + params[[2]]*t}))}
+    else if (type == "w") {return(app(t, fun = function(t) {params[[1]] - params[[2]]*t}))}
+    else if (type == "h") {return(app(t, fun = function(t) {exp(params[[1]] + params[[2]]*t)}))}
+    else if (type == "t") {return(app(t, fun = function(t) {params[[1]]}))}
+
+    # if      (type == "s") {return(params[[1]] + params[[2]]*t)}
+    # else if (type == "w") {return(params[[1]] - params[[2]]*t)}
+    # else if (type == "h") {return(exp(params[[1]] + params[[2]]*t))}
+    # else if (type == "t") {return(params[[1]])}
 
     else {print("No valid parameter type specified.")}
+  }
+
+
+  # smooth data
+  smoothRaster <- function(r, weight) {
+    # one day indented
+    r1D <- r[[c(nlyr(r), 1:(nlyr(r) - 1))]]
+    r1D[[1]] <- 0
+
+    # two days indented
+    r2D <-  r[[c(nlyr(r)-1, nlyr(r), 1:(nlyr(r) - 2))]]
+    r2D[[1:2]] <- 0
+
+    # smooth
+    rSmooth <- (r + weight[[4]]*r1D + weight[[4]]**2 * r2D) / (1 + weight[[4]] + weight[[4]]**2)
+
+    return(rSmooth)
   }
 
 
@@ -191,9 +197,9 @@ calcHDDCDD <- function(bait=FALSE) {
 
     dates <- names(temp)
 
-    solar <- baitInput$rsds %>% brick()
-    wind  <- baitInput$sfc  %>% brick()
-    hum   <- baitInput$huss %>% brick()
+    solar <- baitInput$rsds
+    wind  <- baitInput$sfc
+    hum   <- baitInput$huss
 
     s <- solar -  cfac(temp, type="s", params)
     w <- wind  -  cfac(temp, type="w", params)
@@ -201,28 +207,19 @@ calcHDDCDD <- function(bait=FALSE) {
     t <- temp  -  cfac(temp, type="t", params)
 
     # calc raw bait
-    bait <- temp + weight[[1]]*s - weight[[2]]*w + weight[[3]]*h*t
+    baitDF <- temp + weight[[1]]*s - weight[[2]]*w + weight[[3]]*h*t
 
     # smooth bait over preceding two days with smoothing parameter sigma
-    bait <- raster::brick(
-      sapply(seq(raster::nlayers(bait)), function(i) {
-        if (i %in% c(1, 2)) {return(bait[[i]])}
-        else {
-          bait[[i]] <- (bait[[i]] + weight[[4]]*bait[[i-1]] + weight[[4]]**2 * bait[[i-2]]) / (1 + weight[[4]] + weight[[4]]**2)
-          return(bait[[i]])
-          }
-        }
-      )
-    )
+    baitDF <- smoothRaster(baitDF, weight)
 
     # weighted blend of BAIT and raw temperature
     bBar <- (temp - 0.5*(weight[[6]] + weight[[5]])) * 10 / (weight[[6]] - weight[[5]])
     b <- weight[[7]] / (1 + exp(-bBar))
 
-    bait <- bait * (1 - b) + (temp * b)
+    baitDF <- baitDF * (1 - b) + (temp * b)
 
-    names(bait) <- dates
-    return(bait)
+    names(baitDF) <- dates
+    return(baitDF)
   }
 
 
@@ -340,10 +337,7 @@ calcHDDCDD <- function(bait=FALSE) {
   # fill HDD/CDD from factors for given ambient/limit temperature combination
   calcCellHDDCDD <- function(temp, .typeDD, .tlim, factors) {
     # extract years
-    years <- names(temp) %>%
-      substr(2, 5) %>%
-      as.numeric()
-
+    dates <- names(temp)
 
     # add tolerance of 0.04K to avoid machine precision errors
     factors <- factors %>%
@@ -353,13 +347,15 @@ calcHDDCDD <- function(bait=FALSE) {
                      becomes = .data[["factor"]]) %>%
       data.matrix()
 
-
     # swap ambient temperature values with corresponding DD values
-    hddcdd <- raster::reclassify(temp, factors)
+    hddcdd <- classify(temp, factors)
+
+    time(hddcdd) <- as.Date(dates)
 
     # aggregate to yearly HDD/CDD [K.d/a]
-    hddcdd <- raster::stackApply(hddcdd, years, fun = sum)
-    names(hddcdd) <- gsub("index_", "y", names(hddcdd))
+    hddcdd <- tapp(hddcdd, "years", fun = sum)
+
+    names(hddcdd) <- gsub("_", "", names(hddcdd))
 
     return(hddcdd)
   }
@@ -375,13 +371,13 @@ calcHDDCDD <- function(bait=FALSE) {
     }
 
     # loop: years in raster file r
-    hddcdd_agg <- do.call(
+    hddcddAgg <- do.call(
       "rbind", lapply(
         years_r, function(y) {
-          tmp <- raster::subset(r, y) * raster::subset(weight, y) * mask
-          tmp_tot <- raster::subset(weight, y) * mask
-          tmp <- raster::cellStats(tmp, "sum") /
-            raster::cellStats(tmp_tot, "sum")
+          tmp <- subset(r, y) * subset(weight, y) * mask
+          tmp_tot <- subset(weight, y) * mask
+          tmp <-cellStats(as(tmp, "Raster"), "sum") /
+           cellStats(as(tmp_tot, "Raster"), "sum")
           tmp <- data.frame("region" = names(mask),
                             "period" = y,
                             "value"  = round(tmp, 1))
@@ -390,6 +386,7 @@ calcHDDCDD <- function(bait=FALSE) {
         }
       )
     )
+    return(hddcddAgg)
   }
 
 
@@ -399,12 +396,9 @@ calcHDDCDD <- function(bait=FALSE) {
                               fsfc  = NULL,
                               fhuss = NULL,
                               wBAIT = NULL) {
-   
-    #raster::removeTmpFiles()
- 
+
     # read cellular temperature
-    temp <- readSource("ISIMIPbuildings", subtype = file, convert = TRUE) %>%
-      fillDates(file)
+    temp <- readSource("ISIMIPbuildings", subtype = file, convert = TRUE)
 
     dates <- names(temp)
 
@@ -414,14 +408,16 @@ calcHDDCDD <- function(bait=FALSE) {
 
       # note: easier to do in [C] then convert back
       temp <- temp - 273.15   # [C]
-      print("check dated bait")
+      print("Checking temporal matching of BAIT input data.")
       baitInput <- checkDates(temp, baitInput)
-      print("calc bait")
+      print("Calculating BAIT data.")
       temp <- calcBAIT(temp, baitInput, weight = wBAIT)
-      temp <- round(temp + 273.15, digits=1)    # [K]
+      temp <- terra::round(temp + 273.15, digits=1)    # [K]
     }
 
     names(temp) <- dates
+
+    print("Calculating HDD/CDDs per cell.")
 
     # loop: typeDD
     hddcdd <- do.call(
@@ -509,12 +505,12 @@ calcHDDCDD <- function(bait=FALSE) {
 
 
   # READ-IN DATA----------------------------------------------------------------
-  
+
   # list of files that are processed
   files <- toolGetMapping(mappingFile, type = "sectoral", where = "mappingfolder") %>%
     filter(variable != "")
-  
-  # cells -> country
+
+  # cells -> country mask
   fCM <- file.path(files[files$variable == "CountryMask", "file"])
   countries <- readSource("ISIMIPbuildings", subtype = fCM, convert = FALSE)
 
@@ -564,14 +560,14 @@ calcHDDCDD <- function(bait=FALSE) {
                         seq(nrow(filter(f, f$variable == "tas"))),
                         function(n) {
                           ftas <- file.path(f[f$variable == "tas" & f$gcm == m,][[n, "file"]])
-                          
+
                           print(paste("Processing temperature file:", ftas))
 
                           if(bait) {
                             frsds <- file.path(f[f$variable == "rsds",][[n, "file"]])
-                            
+
                             fsfc  <- file.path(f[f$variable == "sfc",][[n, "file"]])
-                            
+
                             fhuss <- file.path(f[f$variable == "huss",][[n, "file"]])
 
                             hddcddCell <- calcStackHDDCDD(ftas,
@@ -606,8 +602,7 @@ calcHDDCDD <- function(bait=FALSE) {
             }
           )
         )
-      }#, 
-     # mc.cores = ncores
+      }
     )
   )
 
