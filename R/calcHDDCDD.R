@@ -419,6 +419,8 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
     print("Calculating HDD/CDDs per cell.")
 
+    fSplit <- str_split(file, "_") %>% unlist()
+
     # loop: typeDD
     hddcdd <- do.call(
       "rbind", lapply(
@@ -427,7 +429,23 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
           do.call(
             "rbind", lapply(
               tlim[[typeDD]], function(t) {
-                hddcdd_agg <- calcCellHDDCDD(temp, typeDD, t, factors) %>%
+                hddcdd_agg <- calcCellHDDCDD(temp, typeDD, t, factors)
+
+                browser()
+
+                # save intermediate results
+                decades <- c(as.numeric(gsub("y", "", names(hddcdd_agg))) %% 10 == 0)
+                hddcdd_save <- hddcdd_agg[[decades]]
+
+                rname <- paste0(fSplit[[1]], "_", fSplit[[4]], "_", typeDD, "_", t)
+
+                if (bait) {rname <- paste0(rname, "_bait.nc")}
+                else {rname <- paste0(rname, ".nc")}
+
+                terra::writeRaster(hddcdd_save,
+                                   paste0("/p/tmp/hagento/output/rasterdata/", rname))
+
+                hddcdd_agg <- hddcdd_agg %>%
                   aggCells(pop, countries) %>%
                   mutate("variable" = typeDD,
                          "tlim"     = t)    # [C]
