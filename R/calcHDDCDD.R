@@ -73,12 +73,9 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
     }
     else {
       input <- list(
-        "rsds" = readSource("ISIMIPbuildings", subtype = frsds, convert = TRUE) %>%
-          fillDates(frsds),
-        "sfc"  = readSource("ISIMIPbuildings", subtype = fsfc, convert = TRUE) %>%
-          fillDates(fsfc),
-        "huss" = readSource("ISIMIPbuildings", subtype = fhuss, convert = TRUE) %>%
-          fillDates(fhuss))
+        "rsds" = readSource("ISIMIPbuildings", subtype = frsds, convert = TRUE),
+        "sfc"  = readSource("ISIMIPbuildings", subtype = fsfc,  convert = TRUE),
+        "huss" = readSource("ISIMIPbuildings", subtype = fhuss, convert = TRUE))
       return(input)
     }
   }
@@ -154,19 +151,14 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
     if (is.null(params)) {
       params <- switch(type,
                        s = c(100, 7),
-                       w = c(4.5, 0.025),
+                       w = c(4.5, -0.025),
                        h = c(1.1, 0.06),
                        t = c(16))}
 
-    if      (type == "s") {return(app(t, fun = function(t) {params[[1]] + params[[2]]*t}))}
-    else if (type == "w") {return(app(t, fun = function(t) {params[[1]] - params[[2]]*t}))}
-    else if (type == "h") {return(app(t, fun = function(t) {exp(params[[1]] + params[[2]]*t)}))}
-    else if (type == "t") {return(app(t, fun = function(t) {params[[1]]}))}
-
-    # if      (type == "s") {return(params[[1]] + params[[2]]*t)}
-    # else if (type == "w") {return(params[[1]] - params[[2]]*t)}
-    # else if (type == "h") {return(exp(params[[1]] + params[[2]]*t))}
-    # else if (type == "t") {return(params[[1]])}
+    if      (type == "s") {return(params[["a_rsds"]] + params[["b_rsds"]]*t)}
+    else if (type == "w") {return(params[["a_sfcwind"]] + params[["b_sfcwind"]]*t)}
+    else if (type == "h") {return(exp(params[["a_huss"]] + params[["b_huss"]]*t))}
+    else if (type == "t") {return(params[[1]])}
 
     else {print("No valid parameter type specified.")}
   }
@@ -204,7 +196,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
     s <- solar -  cfac(temp, type="s", params)
     w <- wind  -  cfac(temp, type="w", params)
     h <- hum   -  cfac(temp, type="h", params)
-    t <- temp  -  cfac(temp, type="t", params)
+    t <- temp  -  cfac(temp, type="t", params = NULL)
 
     # calc raw bait
     baitDF <- temp + weight[[1]]*s - weight[[2]]*w + weight[[3]]*h*t
@@ -350,7 +342,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
     # swap ambient temperature values with corresponding DD values
     hddcdd <- classify(temp, factors)
 
-    time(hddcdd) <- as.Date(dates)
+    terra::time(hddcdd) <- as.Date(dates)
 
     # aggregate to yearly HDD/CDD [K.d/a]
     hddcdd <- tapp(hddcdd, "years", fun = sum)
@@ -395,7 +387,8 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                               frsds = NULL,
                               fsfc  = NULL,
                               fhuss = NULL,
-                              wBAIT = NULL) {
+                              wBAIT = NULL,
+                              params = NULL) {
 
     # read cellular temperature
     temp <- readSource("ISIMIPbuildings", subtype = file, convert = TRUE)
@@ -411,7 +404,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
       print("Checking temporal matching of BAIT input data.")
       baitInput <- checkDates(temp, baitInput)
       print("Calculating BAIT data.")
-      temp <- calcBAIT(temp, baitInput, weight = wBAIT)
+      temp <- calcBAIT(temp, baitInput, weight = wBAIT, params = params)
       temp <- terra::round(temp + 273.15, digits=1)    # [K]
     }
 
@@ -482,8 +475,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
   # threshold temperature for heating and cooling [C]
   # NOTE: Staffel gives global average of T_heat = 14, T_cool = 20
-  # t_lim <- list("HDD" = seq(17, 25), "CDD" = seq(17, 25))
-  t_lim <- list("HDD" = seq(17, 17), "CDD" = seq(23, 23))
+  t_lim <- list("HDD" = seq(12, 18), "CDD" = seq(20, 26))
 
   # standard deviations for temperature distributions
   tlim_std <- 5   # threshold
@@ -571,7 +563,10 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                     unique() %>%
                     as.list(),
                   function(m) {
+
                     f <- filter(files, .data[["ssp"]] == s, .data[["rcp"]] == r)
+                    baitPars <- calcOutput("BAITpars", aggregate = FALSE, model = m)
+
                     do.call( # file iteration
                       "rbind",
                       lapply(
@@ -597,7 +592,8 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                                                           frsds = frsds,
                                                           fsfc  = fsfc,
                                                           fhuss = fhuss,
-                                                          wBAIT = wBAIT)}
+                                                          wBAIT = wBAIT,
+                                                          params = baitPars)}
 
                           else {
                             hddcddCell <- calcStackHDDCDD(ftas,
@@ -626,11 +622,6 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
   rownames(hddcdd) <- c()
 
-  # average over all GCM's
-  # data <- hddcdd %>%
-  #   group_by(across(-all_of(c("model","value")))) %>%
-  #   summarise(value = mean(.data[["value"]]))
-
 
 
   # OUTPUT----------------------------------------------------------------------
@@ -646,10 +637,6 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
     as.quitte() %>%
     as.magpie() %>%
     toolCountryFill()
-
-  # save data as csv
-  # optFolder <- getConfig("outputfolder")
-  # write.csv(data, file = file.path(optFolder, "hddcdd.csv"), row.names = FALSE)
 
 
   return(list(x = data))

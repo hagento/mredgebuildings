@@ -100,8 +100,7 @@ readISIMIPbuildings <- function(subtype) {
 
   else if (any(vars[["variable"]] %in% baitVars)) {
     fpath <- file.path(vars[["variable"]], vars[["scenario"]], vars[["model"]], subtype)
-    r <- suppressWarnings(terra::rast(fpath)) %>%
-      terra::round(digits=1)
+    r <- suppressWarnings(terra::rast(fpath))
 
     x <- list(x = r, class = "SpatRaster")
   }

@@ -41,7 +41,7 @@ convertISIMIPbuildings <- function(x, subtype) {
     "tas"     = "K",
     "rsds"    = "Wm-2",
     "sfcWind" = "ms-1",
-    "huss"    = "kgkg-1"
+    "huss"    = "gkg-1"
   )
 
   edgeVars <- c("tas", "rsds", "sfcwind", "huss", "population")
@@ -56,6 +56,11 @@ convertISIMIPbuildings <- function(x, subtype) {
       x <- fillDates(x, subtype, pop = TRUE)
     } else {
       x <- fillDates(x, subtype)
+    }
+
+    if (var == "huss") {
+      # convert kg/kg -> g/kg
+      x <- x * 1e3
     }
   }
 
