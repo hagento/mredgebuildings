@@ -102,7 +102,7 @@ readISIMIPbuildings <- function(subtype) {
     fpath <- file.path(vars[["variable"]], vars[["scenario"]], vars[["model"]], subtype)
     r <- suppressWarnings(terra::rast(fpath))
 
-    x <- list(x = r, class = "SpatRaster")
+    x <- list(x = r, class = "SpatRaster", cache = FALSE)
   }
 
   else {stop("Subtype was incorrectly split or invalid subtype given.")}

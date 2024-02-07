@@ -66,5 +66,6 @@ convertISIMIPbuildings <- function(x, subtype) {
 
     return(list(x = x,
                 class = "SpatRaster",
-                unit = unitMapping[var]))
+                unit = unitMapping[var],
+                cache = FALSE))
 }
