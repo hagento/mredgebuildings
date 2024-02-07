@@ -17,13 +17,14 @@
 #'
 #' @importFrom terra regress rast
 #' @importFrom quitte removeColNa
+#' @importFrom magclass as.magpie
 
 
 calcBAITpars <- function(model = "GFDL-ESM4") {
 
   # READ-IN DATA----------------------------------------------------------------
 
-  files <- toolGetMapping("baitregression-files.csv", type = "sectoral") %>%
+  files <- toolGetMapping("baitregression-files_test.csv", type = "sectoral") %>%
     filter(.data[["gcm"]] == model)
 
   vars <- unique(files$variable)
@@ -36,6 +37,8 @@ calcBAITpars <- function(model = "GFDL-ESM4") {
   },
   USE.NAMES = TRUE)
 
+  print("Reading completed")
+  print(names(data))
 
 
   # PROCESS DATA----------------------------------------------------------------
@@ -65,6 +68,7 @@ calcBAITpars <- function(model = "GFDL-ESM4") {
 
   return(list(x = regPars,
               class = "SpatRaster",
+              unit = "(unit)",
               description = "Regression parameters for calcHDDCDD"))
 
 }

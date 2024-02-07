@@ -565,7 +565,9 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                   function(m) {
 
                     f <- filter(files, .data[["ssp"]] == s, .data[["rcp"]] == r)
-                    baitPars <- calcOutput("BAITpars", aggregate = FALSE, model = m)
+                    if (bait) {
+                      baitPars <- calcOutput("BAITpars", aggregate = FALSE, model = m)
+                    }
 
                     do.call( # file iteration
                       "rbind",
