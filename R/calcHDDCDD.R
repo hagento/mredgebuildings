@@ -512,6 +512,9 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
   # concatenate to vector
   wBAIT <- c(x, y, z, sig, bLower, bUpper, bMax)
 
+  # BAIT parameter names
+  parNames <- c("a_rsds", "b_rsds", "a_sfcwind", "b_sfcwind", "a_huss", "b_huss")
+
 
 
   # READ-IN DATA----------------------------------------------------------------
@@ -567,6 +570,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                     f <- filter(files, .data[["ssp"]] == s, .data[["rcp"]] == r)
                     if (bait) {
                       baitPars <- calcOutput("BAITpars", aggregate = FALSE, model = m)
+                      names(baitPars) <- parNames
                     }
 
                     do.call( # file iteration

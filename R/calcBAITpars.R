@@ -38,7 +38,7 @@ calcBAITpars <- function(model = "GFDL-ESM4") {
   USE.NAMES = TRUE)
 
   print("Reading completed")
- 
+
 
 
   # PROCESS DATA----------------------------------------------------------------
@@ -66,9 +66,8 @@ calcBAITpars <- function(model = "GFDL-ESM4") {
 
   # OUTPUT----------------------------------------------------------------------
 
-  regPars <- as.magpie(regPars)
-
   return(list(x = regPars,
+              class = "SpatRaster",
               unit = "(unit)",
               description = "Regression parameters for calcHDDCDD"))
 
