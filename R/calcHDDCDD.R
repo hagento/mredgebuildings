@@ -155,9 +155,9 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                        h = c(1.1, 0.06),
                        t = c(16))}
 
-    if      (type == "s") {return(params[["a_rsds"]] + params[["b_rsds"]]*t)}
-    else if (type == "w") {return(params[["a_sfcwind"]] + params[["b_sfcwind"]]*t)}
-    else if (type == "h") {return(exp(params[["a_huss"]] + params[["b_huss"]]*t))}
+    if      (type == "s") {return(params[[1]] + params[[2]]*t)}
+    else if (type == "w") {return(params[[1]] + params[[2]]*t)}
+    else if (type == "h") {return(exp(params[[1]] + params[[2]]*t))}
     else if (type == "t") {return(params[[1]])}
 
     else {print("No valid parameter type specified.")}
@@ -193,18 +193,25 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
     wind  <- baitInput$sfc
     hum   <- baitInput$huss
 
-    s <- solar -  cfac(temp, type="s", params)
-    w <- wind  -  cfac(temp, type="w", params)
-    h <- hum   -  cfac(temp, type="h", params)
+    print("calc s")
+    s <- solar -  cfac(temp, type="s", params = c(params[["a_rsds"]], params[["b_rsds"]]))
+    print("calc w")
+    w <- wind  -  cfac(temp, type="w", params = c(params[["a_sfcwind"]], params[["b_sfcwind"]]))
+    print("print h")
+    h <- hum   -  cfac(temp, type="h", params = c(params[["a_huss"]], params[["b_huss"]]))
+    print("calc t")
     t <- temp  -  cfac(temp, type="t", params = NULL)
 
     # calc raw bait
-    baitDF <- temp + weight[[1]]*s - weight[[2]]*w + weight[[3]]*h*t
+    print("calc bait")
+    baitDF <- temp + weight[[1]]*s + weight[[2]]*w + weight[[3]]*h*t
 
     # smooth bait over preceding two days with smoothing parameter sigma
+    print("smooth")
     baitDF <- smoothRaster(baitDF, weight)
 
     # weighted blend of BAIT and raw temperature
+    print("blend")
     bBar <- (temp - 0.5*(weight[[6]] + weight[[5]])) * 10 / (weight[[6]] - weight[[5]])
     b <- weight[[7]] / (1 + exp(-bBar))
 
@@ -472,6 +479,9 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
 
   # PARAMETERS------------------------------------------------------------------
+
+  terra::setGDALconfig(c("BIGTIFF = YES"))
+
 
   # threshold temperature for heating and cooling [C]
   # NOTE: Staffel gives global average of T_heat = 14, T_cool = 20
