@@ -397,6 +397,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                               fhuss = NULL,
                               wBAIT = NULL,
                               params = NULL) {
+    browser()
 
     # read cellular temperature
     temp <- readSource("ISIMIPbuildings", subtype = file, convert = TRUE)
@@ -457,6 +458,51 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
         }
       )
     )
+  }
+
+  # initialize full calculation
+  makeCalculations <- function(f, m, n, t_lim, countries, pop, hddcddFactor,
+                               bait, wBAIT = NULL, params = NULL, suffix = NULL) {
+
+    ftas <- gsub(".nc",
+                 paste0("_", suffix, ".nc"),
+                 f[f$variable == "tas" & f$gcm == m,][[n, "file"]])
+
+    print(paste("Processing temperature file:", ftas))
+
+    if(bait) {
+      frsds <- gsub(".nc",
+                    paste0("_", suffix, ".nc"),
+                    f[f$variable == "rsds" & f$gcm == m,][[n, "file"]])
+
+      fsfc  <- gsub(".nc",
+                    paste0("_", suffix, ".nc"),
+                    f[f$variable == "sfcwind" & f$gcm == m,][[n, "file"]])
+
+      fhuss <- gsub(".nc",
+                    paste0("_", suffix, ".nc"),
+                    f[f$variable == "huss" & f$gcm == m,][[n, "file"]])
+
+      hddcddCell <- calcStackHDDCDD(ftas,
+                                    t_lim,
+                                    countries,
+                                    pop,
+                                    hddcddFactor,
+                                    bait,
+                                    frsds = frsds,
+                                    fsfc  = fsfc,
+                                    fhuss = fhuss,
+                                    wBAIT = wBAIT,
+                                    params = params)}
+
+    else {
+      hddcddCell <- calcStackHDDCDD(ftas,
+                                    t_lim,
+                                    countries,
+                                    pop,
+                                    hddcddFactor,
+                                    bait)}
+    return(hddcddCell)
   }
 
 
@@ -581,8 +627,9 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
                     f <- filter(files, .data[["ssp"]] == s, .data[["rcp"]] == r)
                     if (bait) {
-                      baitPars <- calcOutput("BAITpars", aggregate = FALSE, model = m)
-                      names(baitPars) <- parNames
+                      # baitPars <- calcOutput("BAITpars", aggregate = FALSE, model = m)
+                      # names(baitPars) <- parNames
+                      baitPars <- NULL
                     }
 
                     do.call( # file iteration
@@ -590,41 +637,46 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                       lapply(
                         seq(nrow(filter(f, f$variable == "tas"))),
                         function(n) {
-                          ftas <- file.path(f[f$variable == "tas" & f$gcm == m,][[n, "file"]])
+                          split <- f[f$variable == "tas" & f$gcm == m,][[n, "split"]]
 
-                          print(paste("Processing temperature file:", ftas))
-
-                          if(bait) {
-                            frsds <- file.path(f[f$variable == "rsds",][[n, "file"]])
-
-                            fsfc  <- file.path(f[f$variable == "sfcwind",][[n, "file"]])
-
-                            fhuss <- file.path(f[f$variable == "huss",][[n, "file"]])
-
-                            hddcddCell <- calcStackHDDCDD(ftas,
-                                                          t_lim,
-                                                          countries,
-                                                          pop,
-                                                          hddcddFactor,
-                                                          bait,
-                                                          frsds = frsds,
-                                                          fsfc  = fsfc,
-                                                          fhuss = fhuss,
-                                                          wBAIT = wBAIT,
-                                                          params = baitPars)}
+                          if (as.logical(split)) {
+                            hddcddCell <- do.call(
+                              "rbind",
+                              lapply(list("A", "B"), function(suffix) {
+                                tmp <- makeCalculations(f = f,
+                                                       m = m,
+                                                       n = n,
+                                                       t_lim = t_lim,
+                                                       countries = countries,
+                                                       pop = pop,
+                                                       hddcddFactor = hddcddFactor,
+                                                       bait = bait,
+                                                       wBAIT = wBAIT,
+                                                       params = baitPars,
+                                                       suffix = "B")
+                                return(tmp)
+                                }
+                              )
+                            )
+                          }
 
                           else {
-                            hddcddCell <- calcStackHDDCDD(ftas,
-                                                          t_lim,
-                                                          countries,
-                                                          pop,
-                                                          hddcddFactor,
-                                                          bait)}
+                            hddcddCell <- makeCalculations(f = f,
+                                                          m = m,
+                                                          n = n,
+                                                          t_lim = t_lim,
+                                                          countries = countries,
+                                                          pop = pop,
+                                                          hddcddFactor = hddcddFactor,
+                                                          bait = bait)
+                          }
 
                           hddcddCell <- hddcddCell %>%
                             mutate("model" = m,
                                    "ssp" = s,
                                    "rcp" = r)
+
+                          return(hddcddCell)
                         }
                       )
                     )

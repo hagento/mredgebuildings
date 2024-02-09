@@ -47,11 +47,50 @@ readISIMIPbuildings <- function(subtype) {
       vars[["variable"]] <- subSplit[[5]]
       vars[["scenario"]] <- subSplit[[4]]
       vars[["model"]]    <- subSplit[[1]]
+
+      if (grepl("A", tail(subSplit, 1))) {
+        vars[["yStart"]] <- subSplit[[length(subSplit) - 2]]
+
+        yEnd <- as.numeric(vars[["yStart"]]) + 4 # 5 year period
+        vars[["yEnd"]] <- as.character(yEnd)
+
+        vars[["subtype"]] <- sub("_A.nc", ".nc", subtype)
+      }
+
+      else if (grepl("B", tail(subSplit, 1))) {
+        vars[["yEnd"]]   <- subSplit[[length(subSplit) - 1]]
+
+        yStart <- as.numeric(vars[["yEnd"]]) - 4 # 5 year period
+        vars[["yStart"]] <- as.character(yStart)
+
+        vars[["yStartFile"]] <- subSplit[[length(subSplit) - 2]]
+
+        vars[["subtype"]] <- sub("_B.nc", ".nc", subtype)
+      }
     }
 
     else {stop("Invalid subtype given.")}
 
     return(vars)
+  }
+
+
+  # determine period range of subset
+  getIdxRange <- function(yStart, yEnd, vars) {
+    dStart <- as.Date(paste0(yStart, "-01-01"))
+    dEnd   <- as.Date(paste0(yEnd,   "-12-31"))
+    dRange <- seq.Date(from = dStart, to = dEnd, by = "day")
+
+    if (is.null(vars[["yStartFile"]])) {
+      idx <- seq(1:length(dRange))
+    }
+    else {
+      dStartFile <- as.Date(paste0(vars[["yStartFile"]], "-01-01"))
+      dRangeFile <- seq.Date(from = dStartFile, to = dEnd, by = "day")
+      idx <- seq(length(dRangeFile) - length(dRange) + 1, length(dRangeFile))
+    }
+
+    return(idx)
   }
 
 
@@ -90,7 +129,7 @@ readISIMIPbuildings <- function(subtype) {
     if (any(raster::res(r) != 0.5)) {
       r <- terra::aggregate(r, fun = "sum",
                              fact = round(0.5 / terra::res(r), 3))
-      terra::res(r)    <- 0.5
+      terra::res(r) <- 0.5
       terra::ext(r) <- round(terra::ext(r))
     }
 
@@ -99,8 +138,16 @@ readISIMIPbuildings <- function(subtype) {
 
 
   else if (any(vars[["variable"]] %in% baitVars)) {
-    fpath <- file.path(vars[["variable"]], vars[["scenario"]], vars[["model"]], subtype)
-    r <- suppressWarnings(terra::rast(fpath))
+
+    if (!is.null(vars[["yStart"]])) {
+      fpath <- file.path(vars[["variable"]], vars[["scenario"]], vars[["model"]], vars[["subtype"]])
+      idx <- getIdxRange(vars[["yStart"]], vars[["yEnd"]], vars)
+      r <- suppressWarnings(terra::rast(fpath, lyrs = idx))
+    }
+    else {
+      fpath <- file.path(vars[["variable"]], vars[["scenario"]], vars[["model"]], subtype)
+      r <- suppressWarnings(terra::rast(fpath))
+    }
 
     x <- list(x = r, class = "SpatRaster", cache = FALSE)
   }
