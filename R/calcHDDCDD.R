@@ -397,7 +397,6 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                               fhuss = NULL,
                               wBAIT = NULL,
                               params = NULL) {
-    browser()
 
     # read cellular temperature
     temp <- readSource("ISIMIPbuildings", subtype = file, convert = TRUE)
@@ -433,17 +432,21 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
               tlim[[typeDD]], function(t) {
                 hddcdd_agg <- calcCellHDDCDD(temp, typeDD, t, factors)
 
-                browser()
-
                 # save intermediate results
                 decades <- c(as.numeric(gsub("y", "", names(hddcdd_agg))) %% 10 == 0)
                 if (any(decades)) {
                   hddcdd_save <- hddcdd_agg[[decades]]
 
-                  rname <- paste0(fSplit[[1]], "_", fSplit[[4]], "_", typeDD, "_", t)
+                  y <- names(hddcdd_agg)[as.numeric(gsub("y", "", names(hddcdd_agg))) %% 10 == 0]
+
+                  y <- gsub("y", "", y) %>%
+                    paste(collapse = "-")
+
+                  rname <- paste0(fSplit[[1]], "_", y, "_", fSplit[[4]], "_", typeDD, "_", t)
 
                   if (bait) {rname <- paste0(rname, "_bait.nc")}
                   else {rname <- paste0(rname, ".nc")}
+
 
                   terra::writeRaster(hddcdd_save,
                                    paste0("/p/tmp/hagento/output/rasterdata/", rname))
@@ -452,6 +455,8 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                   aggCells(pop, countries) %>%
                   mutate("variable" = typeDD,
                          "tlim"     = t)    # [C]
+
+                return(hddcdd_agg)
               }
             )
           )
@@ -644,16 +649,16 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                               "rbind",
                               lapply(list("A", "B"), function(suffix) {
                                 tmp <- makeCalculations(f = f,
-                                                       m = m,
-                                                       n = n,
-                                                       t_lim = t_lim,
-                                                       countries = countries,
-                                                       pop = pop,
-                                                       hddcddFactor = hddcddFactor,
-                                                       bait = bait,
-                                                       wBAIT = wBAIT,
-                                                       params = baitPars,
-                                                       suffix = "B")
+                                                        m = m,
+                                                        n = n,
+                                                        t_lim = t_lim,
+                                                        countries = countries,
+                                                        pop = pop,
+                                                        hddcddFactor = hddcddFactor,
+                                                        bait = bait,
+                                                        wBAIT = wBAIT,
+                                                        params = baitPars,
+                                                        suffix = "B")
                                 return(tmp)
                                 }
                               )
@@ -662,13 +667,13 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
                           else {
                             hddcddCell <- makeCalculations(f = f,
-                                                          m = m,
-                                                          n = n,
-                                                          t_lim = t_lim,
-                                                          countries = countries,
-                                                          pop = pop,
-                                                          hddcddFactor = hddcddFactor,
-                                                          bait = bait)
+                                                           m = m,
+                                                           n = n,
+                                                           t_lim = t_lim,
+                                                           countries = countries,
+                                                           pop = pop,
+                                                           hddcddFactor = hddcddFactor,
+                                                           bait = bait)
                           }
 
                           hddcddCell <- hddcddCell %>%

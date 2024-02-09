@@ -1,5 +1,6 @@
 #' Read relevant ISIMIP data for mredgebuildings
 #'
+#'
 #' @param subtype filename
 #'
 #' @author Hagen Tockhorn
@@ -7,13 +8,19 @@
 #' @importFrom stringr str_split
 #' @importFrom raster brick dropLayer res extent aggregate
 #'
-# NOTE:
-# folder structure in inputdata/sources/ISIMIPbuildings is expected to be:
-#    country masks : var/
-#    population :    var/scenario
-#    other :         var/scenario/model
-#
-# NOTE: currently, this function only reads data from ISIMIP3b
+#' @note
+#' Argument subtype consist of full filenames of the respective raster files. In
+#' order to improve runtime and general problems that come with processing large
+#' raster files, filenames marked with "_A" or "_B" before the filetype declaration,
+#' will be split in the respective first and second half of the dataset.
+#'
+#' @note
+#' folder structure in inputdata/sources/ISIMIPbuildings is expected to be:
+#'    country masks : var/
+#'    population :    var/scenario
+#'    other :         var/scenario/model
+#'
+#' @note currently, this function only reads data from ISIMIP3b
 
 
 readISIMIPbuildings <- function(subtype) {
