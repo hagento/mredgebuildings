@@ -155,9 +155,10 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                        h = c(1.1, 0.06),
                        t = c(16))}
 
-    if      (type == "s") {return(params[[1]] + params[[2]]*t)}
-    else if (type == "w") {return(params[[1]] + params[[2]]*t)}
-    else if (type == "h") {return(exp(params[[1]] + params[[2]]*t))}
+    print(names(params))
+    if      (type == "s") {return(app(t, function(t) {params[[1]] + params[[2]]*t}))}
+    else if (type == "w") {return(app(t, function(t) {params[[1]] + params[[2]]*t}))}
+    else if (type == "h") {return(app(t, function(t) {exp(params[[1]] + params[[2]]*t)}))}
     else if (type == "t") {return(params[[1]])}
 
     else {print("No valid parameter type specified.")}
@@ -435,16 +436,17 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
                 # save intermediate results
                 decades <- c(as.numeric(gsub("y", "", names(hddcdd_agg))) %% 10 == 0)
-                hddcdd_save <- hddcdd_agg[[decades]]
+                if (any(decades)) {
+                  hddcdd_save <- hddcdd_agg[[decades]]
 
-                rname <- paste0(fSplit[[1]], "_", fSplit[[4]], "_", typeDD, "_", t)
+                  rname <- paste0(fSplit[[1]], "_", fSplit[[4]], "_", typeDD, "_", t)
 
-                if (bait) {rname <- paste0(rname, "_bait.nc")}
-                else {rname <- paste0(rname, ".nc")}
+                  if (bait) {rname <- paste0(rname, "_bait.nc")}
+                  else {rname <- paste0(rname, ".nc")}
 
-                terra::writeRaster(hddcdd_save,
+                  terra::writeRaster(hddcdd_save,
                                    paste0("/p/tmp/hagento/output/rasterdata/", rname))
-
+                }
                 hddcdd_agg <- hddcdd_agg %>%
                   aggCells(pop, countries) %>%
                   mutate("variable" = typeDD,
@@ -595,7 +597,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                           if(bait) {
                             frsds <- file.path(f[f$variable == "rsds",][[n, "file"]])
 
-                            fsfc  <- file.path(f[f$variable == "sfc",][[n, "file"]])
+                            fsfc  <- file.path(f[f$variable == "sfcwind",][[n, "file"]])
 
                             fhuss <- file.path(f[f$variable == "huss",][[n, "file"]])
 

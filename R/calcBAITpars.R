@@ -24,7 +24,7 @@ calcBAITpars <- function(model = "GFDL-ESM4") {
 
   # READ-IN DATA----------------------------------------------------------------
 
-  files <- toolGetMapping("baitregression-files_test.csv", type = "sectoral") %>%
+  files <- toolGetMapping("baitregression-files.csv", type = "sectoral") %>%
     filter(.data[["gcm"]] == model)
 
   vars <- unique(files$variable)
