@@ -449,8 +449,10 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
 
                   terra::writeRaster(hddcdd_save,
-                                   paste0("/p/tmp/hagento/output/rasterdata/", rname))
+                                     paste0("/p/tmp/hagento/output/rasterdata/", rname),
+                                     overwrite = TRUE)
                 }
+
                 hddcdd_agg <- hddcdd_agg %>%
                   aggCells(pop, countries) %>%
                   mutate("variable" = typeDD,
@@ -465,29 +467,41 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
     )
   }
 
+
   # initialize full calculation
   makeCalculations <- function(f, m, n, t_lim, countries, pop, hddcddFactor,
                                bait, wBAIT = NULL, params = NULL, suffix = NULL) {
 
-    ftas <- gsub(".nc",
-                 paste0("_", suffix, ".nc"),
-                 f[f$variable == "tas" & f$gcm == m,][[n, "file"]])
+    if (!is.null(suffix)) {
+      ftas <- gsub(".nc",
+                   paste0("_", suffix, ".nc"),
+                   f[f$variable == "tas" & f$gcm == m,][[n, "file"]])
+
+      if (bait){
+        frsds <- gsub(".nc",
+                      paste0("_", suffix, ".nc"),
+                      f[f$variable == "rsds" & f$gcm == m,][[n, "file"]])
+
+        fsfc  <- gsub(".nc",
+                      paste0("_", suffix, ".nc"),
+                      f[f$variable == "sfcwind" & f$gcm == m,][[n, "file"]])
+
+        fhuss <- gsub(".nc",
+                      paste0("_", suffix, ".nc"),
+                      f[f$variable == "huss" & f$gcm == m,][[n, "file"]])
+      }
+    }
+
+    else {
+      ftas  <- f
+      frsds <- f[f$variable == "rsds" & f$gcm == m,][[n, "file"]]
+      fsfc  <- f[f$variable == "sfcwind" & f$gcm == m,][[n, "file"]]
+      fhuss <- f[f$variable == "huss" & f$gcm == m,][[n, "file"]]
+    }
 
     print(paste("Processing temperature file:", ftas))
 
     if(bait) {
-      frsds <- gsub(".nc",
-                    paste0("_", suffix, ".nc"),
-                    f[f$variable == "rsds" & f$gcm == m,][[n, "file"]])
-
-      fsfc  <- gsub(".nc",
-                    paste0("_", suffix, ".nc"),
-                    f[f$variable == "sfcwind" & f$gcm == m,][[n, "file"]])
-
-      fhuss <- gsub(".nc",
-                    paste0("_", suffix, ".nc"),
-                    f[f$variable == "huss" & f$gcm == m,][[n, "file"]])
-
       hddcddCell <- calcStackHDDCDD(ftas,
                                     t_lim,
                                     countries,
@@ -522,11 +536,6 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
       facet_wrap(~ variable) +
       scale_fill_gradientn(colours = rev(terrain.colors(225))) +
       coord_equal()
-  }
-
-  roundRas <- function(a) {
-    a <- round(a, digits = 1) %>%
-      brick()
   }
 
 
@@ -632,9 +641,8 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
                     f <- filter(files, .data[["ssp"]] == s, .data[["rcp"]] == r)
                     if (bait) {
-                      # baitPars <- calcOutput("BAITpars", aggregate = FALSE, model = m)
-                      # names(baitPars) <- parNames
-                      baitPars <- NULL
+                      baitPars <- calcOutput("BAITpars", aggregate = FALSE, model = m)
+                      names(baitPars) <- parNames
                     }
 
                     do.call( # file iteration
@@ -658,7 +666,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                                                         bait = bait,
                                                         wBAIT = wBAIT,
                                                         params = baitPars,
-                                                        suffix = "B")
+                                                        suffix = suffix)
                                 return(tmp)
                                 }
                               )
