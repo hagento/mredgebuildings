@@ -120,6 +120,7 @@ readISIMIPbuildings <- function(subtype) {
 
 
   else if (vars[["variable"]] == "population") {
+    browser()
     fpath <- file.path(vars[["variable"]], vars[["scenario"]], subtype)
     r <- suppressWarnings(terra::rast(fpath, subds = "total-population"))
 
@@ -140,7 +141,7 @@ readISIMIPbuildings <- function(subtype) {
       terra::ext(r) <- round(terra::ext(r))
     }
 
-    x <- list(x = r, class = "SpatRaster")
+    x <- list(x = r, class = "SpatRaster", cache = FALSE)
   }
 
 

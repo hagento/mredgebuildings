@@ -33,7 +33,8 @@ convertISIMIPbuildings <- function(x, subtype) {
       dStart <- as.Date(paste0(yStart, "-1-1"))
       dates <- seq.Date(dStart, by = "day", length.out = n)
     } else {
-      dates <- seq.Date(yStart, by = "year", length.out = n)
+      print("pop")
+      dates <- seq(yStart, by = 1, length.out = n) %>% as.character()
     }
 
     # fill dates
@@ -60,7 +61,7 @@ convertISIMIPbuildings <- function(x, subtype) {
   if (grepl(paste(edgeVars, collapse = "|"), subtype)) {
     var <- edgeVars[str_detect(subtype, edgeVars)]
 
-    if (var == "pop") {
+    if (var == "population") {
       x <- fillDates(x, subtype, pop = TRUE)
     } else {
       x <- fillDates(x, subtype)
