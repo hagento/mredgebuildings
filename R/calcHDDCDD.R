@@ -156,9 +156,9 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                        t = c(16))}
 
     print(names(params))
-    if      (type == "s") {return(app(t, function(t) {params[[1]] + params[[2]]*t}))}
-    else if (type == "w") {return(app(t, function(t) {params[[1]] + params[[2]]*t}))}
-    else if (type == "h") {return(app(t, function(t) {exp(params[[1]] + params[[2]]*t)}))}
+    if      (type == "s") {return(params[[1]] + params[[2]]*t)}
+    else if (type == "w") {return(params[[1]] + params[[2]]*t)}
+    else if (type == "h") {return(exp(params[[1]] + params[[2]]*t))}
     else if (type == "t") {return(params[[1]])}
 
     else {print("No valid parameter type specified.")}
@@ -493,7 +493,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
     }
 
     else {
-      ftas  <- f
+      ftas  <- f[f$variable == "tas" & f$gcm == m,][[n, "file"]]
       frsds <- f[f$variable == "rsds" & f$gcm == m,][[n, "file"]]
       fsfc  <- f[f$variable == "sfcwind" & f$gcm == m,][[n, "file"]]
       fhuss <- f[f$variable == "huss" & f$gcm == m,][[n, "file"]]
@@ -681,7 +681,9 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
                                                            countries = countries,
                                                            pop = pop,
                                                            hddcddFactor = hddcddFactor,
-                                                           bait = bait)
+                                                           bait = bait,
+                                                           wBAIT = wBAIT,
+                                                           params = baitPars)
                           }
 
                           hddcddCell <- hddcddCell %>%
