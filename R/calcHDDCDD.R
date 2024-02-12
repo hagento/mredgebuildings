@@ -353,7 +353,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
     terra::time(hddcdd) <- as.Date(dates)
 
     # aggregate to yearly HDD/CDD [K.d/a]
-    hddcdd <- tapp(hddcdd, "years", fun = sum)
+    hddcdd <- tapp(hddcdd, "years", fun = sum, na.rm = TRUE)
 
     names(hddcdd) <- gsub("_", "", names(hddcdd))
 
@@ -413,9 +413,10 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
       baitInput <- checkDates(temp, baitInput)
       print("Calculating BAIT data.")
       temp <- calcBAIT(temp, baitInput, weight = wBAIT, params = params)
-      temp <- terra::round(temp + 273.15, digits=1)    # [K]
+      temp <- temp + 273.15   # [K]
     }
 
+    temp <- terra::round(temp, digits = 1)
     names(temp) <- dates
 
     print("Calculating HDD/CDDs per cell.")
@@ -547,7 +548,8 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
   # threshold temperature for heating and cooling [C]
   # NOTE: Staffel gives global average of T_heat = 14, T_cool = 20
-  t_lim <- list("HDD" = seq(12, 18), "CDD" = seq(20, 26))
+  # t_lim <- list("HDD" = seq(12, 18), "CDD" = seq(20, 26))
+  t_lim <- list("HDD" = c(14), "CDD" = c(20))
 
   # standard deviations for temperature distributions
   tlim_std <- 5   # threshold
@@ -604,7 +606,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
   # PROCESS DATA----------------------------------------------------------------
 
   # calculate HDD/CDD-factors
-  hddcddFactor <- calcHDDCDDFactors(tlow=-50.15, tup=49.85, t_lim, tamb_std, tlim_std)
+  hddcddFactor <- calcHDDCDDFactors(tlow=-100.15, tup=74.85, t_lim, tamb_std, tlim_std)
 
   # loop: GCM results for ambient temperature (SSP scenarios)
   hddcdd <- do.call(

@@ -120,7 +120,6 @@ readISIMIPbuildings <- function(subtype) {
 
 
   else if (vars[["variable"]] == "population") {
-    browser()
     fpath <- file.path(vars[["variable"]], vars[["scenario"]], subtype)
     r <- suppressWarnings(terra::rast(fpath, subds = "total-population"))
 
