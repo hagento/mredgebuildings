@@ -6,6 +6,7 @@
 #'
 #' @param mappingFile data.frame containing input data file names and directories
 #' @param bait specify use of raw temperature or BAIT
+#' @param multiscen specify if mappingFile covers more than one scenario
 #'
 #' @return magpie object of heating and cooling degree days
 #'
@@ -27,7 +28,7 @@
 #' @importFrom terra app nlyr tapp subset rast classify time
 
 
-calcHDDCDD <- function(mappingFile, bait=FALSE) {
+calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
 
 
   # FUNCTIONS-------------------------------------------------------------------
@@ -82,7 +83,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
 
   #check if time period is congruent and adapt if necessary
-  checkDates <- function(temp, baitInput) {
+  checkDates <- function(baitInput, temp) {
     dates_t <- names(temp)
 
     baitInput <- sapply(names(baitInput), function(var) {
@@ -167,6 +168,9 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
   # smooth data
   smoothRaster <- function(r, weight) {
+    # smooth bait over preceding two days with smoothing parameter sigma
+    print("smooth")
+
     # one day indented
     r1D <- r[[c(nlyr(r), 1:(nlyr(r) - 1))]]
     r1D[[1]] <- 0
@@ -182,7 +186,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
   }
 
 
-  calcBAIT <- function(temp, baitInput, weight=NULL, params=NULL) {
+  calcBAIT <- function(baitInput, temp, weight=NULL, params=NULL) {
     # weight=(x,y,z,sigma,bLower,bUpper,bMax)
     if (is.null(weight)) {
       print("Please give appropriate weights for the calculation of BAIT.")
@@ -207,18 +211,17 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
     print("calc bait")
     baitDF <- temp + weight[[1]]*s + weight[[2]]*w + weight[[3]]*h*t
 
-    # smooth bait over preceding two days with smoothing parameter sigma
-    print("smooth")
-    baitDF <- smoothRaster(baitDF, weight)
+    return(baitDF)
+  }
 
+
+  blendBAIT <- function(baitDF, temp, weight) {
     # weighted blend of BAIT and raw temperature
     print("blend")
     bBar <- (temp - 0.5*(weight[[6]] + weight[[5]])) * 10 / (weight[[6]] - weight[[5]])
     b <- weight[[7]] / (1 + exp(-bBar))
 
     baitDF <- baitDF * (1 - b) + (temp * b)
-
-    names(baitDF) <- dates
     return(baitDF)
   }
 
@@ -405,14 +408,15 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
     # optional: transform raw temperature into BAIT
     if (bait) {
-      baitInput <- calcBaitInput(frsds, fsfc, fhuss)
-
       # note: easier to do in [C] then convert back
       temp <- temp - 273.15   # [C]
-      print("Checking temporal matching of BAIT input data.")
-      baitInput <- checkDates(temp, baitInput)
-      print("Calculating BAIT data.")
-      temp <- calcBAIT(temp, baitInput, weight = wBAIT, params = params)
+
+      temp <- calcBaitInput(frsds, fsfc, fhuss) %>%
+        checkDates(temp) %>%
+        calcBAIT(temp, weight = wBAIT, params = params) %>%
+        smoothRaster(weight = wBAIT) %>%
+        blendBAIT(temp, weight = wBAIT)
+
       temp <- temp + 273.15   # [K]
     }
 
@@ -548,8 +552,8 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
 
   # threshold temperature for heating and cooling [C]
   # NOTE: Staffel gives global average of T_heat = 14, T_cool = 20
-  # t_lim <- list("HDD" = seq(12, 18), "CDD" = seq(20, 26))
-  t_lim <- list("HDD" = c(14), "CDD" = c(20))
+  t_lim <- list("HDD" = seq(12, 18), "CDD" = seq(20, 26))
+  # t_lim <- list("HDD" = c(14), "CDD" = c(20))
 
   # standard deviations for temperature distributions
   tlim_std <- 5   # threshold
@@ -608,104 +612,173 @@ calcHDDCDD <- function(mappingFile, bait=FALSE) {
   # calculate HDD/CDD-factors
   hddcddFactor <- calcHDDCDDFactors(tlow=-100.15, tup=74.85, t_lim, tamb_std, tlim_std)
 
-  # loop: GCM results for ambient temperature (SSP scenarios)
-  hddcdd <- do.call(
-    "rbind",
-    lapply( # ssp iteration
-      ssps <-  files %>%
-        filter(.data[["variable"]] == "tas") %>%
-        select("ssp") %>%
-        unique() %>%
-        as.list(),
-      function(s) {
-        fpop <- files %>% filter(ssp == s, variable == "pop")
-        pop <- readSource("ISIMIPbuildings", subtype = fpop$file,
-                          convert = FALSE)
-        do.call(
-          "rbind",
-          lapply( # rcp iteration
-            rcps <- files %>%
-              filter(.data[["variable"]] == "tas",
-                     .data[["ssp"]] == s) %>%
-              select("rcp") %>%
-              unique() %>%
-              as.list(),
-            function(r) {
-              do.call(
-                "rbind",
-                lapply( # model iteration
-                  model <- files %>%
-                    filter(.data[["variable"]] == "tas") %>%
-                    select("gcm") %>%
-                    unique() %>%
-                    as.list(),
-                  function(m) {
 
-                    f <- filter(files, .data[["ssp"]] == s, .data[["rcp"]] == r)
-                    if (bait) {
-                      baitPars <- calcOutput("BAITpars", aggregate = FALSE, model = m)
-                      names(baitPars) <- parNames
-                    }
+  if (multiscen) {
+    hddcdd <- do.call(
+      "rbind",
+      lapply( # ssp iteration
+        ssps <-  files %>%
+          filter(.data[["variable"]] == "tas") %>%
+          select("ssp") %>%
+          unique() %>%
+          as.list(),
+        function(s) {
+          fpop <- files %>% filter(ssp == s, variable == "pop")
+          pop <- readSource("ISIMIPbuildings", subtype = fpop$file,
+                            convert = FALSE)
+          do.call(
+            "rbind",
+            lapply( # rcp iteration
+              rcps <- files %>%
+                filter(.data[["variable"]] == "tas",
+                       .data[["ssp"]] == s) %>%
+                select("rcp") %>%
+                unique() %>%
+                as.list(),
+              function(r) {
+                do.call(
+                  "rbind",
+                  lapply( # model iteration
+                    model <- files %>%
+                      filter(.data[["variable"]] == "tas") %>%
+                      select("gcm") %>%
+                      unique() %>%
+                      as.list(),
+                    function(m) {
 
-                    do.call( # file iteration
-                      "rbind",
-                      lapply(
-                        seq(nrow(filter(f, f$variable == "tas"))),
-                        function(n) {
-                          split <- f[f$variable == "tas" & f$gcm == m,][[n, "split"]]
+                      f <- filter(files, .data[["ssp"]] == s, .data[["rcp"]] == r)
+                      if (bait) {
+                        baitPars <- calcOutput("BAITpars", aggregate = FALSE, model = m)
+                        names(baitPars) <- parNames
+                      }
 
-                          if (as.logical(split)) {
-                            hddcddCell <- do.call(
-                              "rbind",
-                              lapply(list("A", "B"), function(suffix) {
-                                tmp <- makeCalculations(f = f,
-                                                        m = m,
-                                                        n = n,
-                                                        t_lim = t_lim,
-                                                        countries = countries,
-                                                        pop = pop,
-                                                        hddcddFactor = hddcddFactor,
-                                                        bait = bait,
-                                                        wBAIT = wBAIT,
-                                                        params = baitPars,
-                                                        suffix = suffix)
-                                return(tmp)
+                      do.call( # file iteration
+                        "rbind",
+                        lapply(
+                          seq(nrow(filter(f, f$variable == "tas"))),
+                          function(n) {
+                            split <- f[f$variable == "tas" & f$gcm == m,][[n, "split"]]
+
+                            if (as.logical(split)) {
+                              hddcddCell <- do.call(
+                                "rbind",
+                                lapply(list("A", "B"), function(suffix) {
+                                  tmp <- makeCalculations(f = f,
+                                                          m = m,
+                                                          n = n,
+                                                          t_lim = t_lim,
+                                                          countries = countries,
+                                                          pop = pop,
+                                                          hddcddFactor = hddcddFactor,
+                                                          bait = bait,
+                                                          wBAIT = wBAIT,
+                                                          params = baitPars,
+                                                          suffix = suffix)
+                                  return(tmp)
                                 }
+                                )
                               )
-                            )
+                            }
+
+                            else {
+                              hddcddCell <- makeCalculations(f = f,
+                                                             m = m,
+                                                             n = n,
+                                                             t_lim = t_lim,
+                                                             countries = countries,
+                                                             pop = pop,
+                                                             hddcddFactor = hddcddFactor,
+                                                             bait = bait,
+                                                             wBAIT = wBAIT,
+                                                             params = baitPars)
+                            }
+
+                            hddcddCell <- hddcddCell %>%
+                              mutate("model" = m,
+                                     "ssp" = s,
+                                     "rcp" = r)
+
+                            return(hddcddCell)
                           }
-
-                          else {
-                            hddcddCell <- makeCalculations(f = f,
-                                                           m = m,
-                                                           n = n,
-                                                           t_lim = t_lim,
-                                                           countries = countries,
-                                                           pop = pop,
-                                                           hddcddFactor = hddcddFactor,
-                                                           bait = bait,
-                                                           wBAIT = wBAIT,
-                                                           params = baitPars)
-                          }
-
-                          hddcddCell <- hddcddCell %>%
-                            mutate("model" = m,
-                                   "ssp" = s,
-                                   "rcp" = r)
-
-                          return(hddcddCell)
-                        }
+                        )
                       )
-                    )
-                  }
+                    }
+                  )
                 )
-              )
-            }
+              }
+            )
           )
-        )
-      }
+        }
+      )
     )
-  )
+  }
+
+  else {
+    ssp   <- files$ssp[[1]]
+    rcp   <- files$rcp[[1]]
+    model <- files$gcm[[1]]
+
+    fpop <- files %>% filter(variable == "pop")
+    pop  <- readSource("ISIMIPbuildings", subtype = fpop$file,
+                      convert = FALSE)
+
+    if (bait) {
+      baitPars <- calcOutput("BAITpars", aggregate = FALSE, model = model)
+      names(baitPars) <- parNames
+    }
+
+    hddcdd <- do.call( # file iteration
+      "rbind",
+      lapply(
+        seq(nrow(filter(files, files$variable == "tas"))),
+        function(n) {
+          split <- files[files$variable == "tas" & files$gcm == m,][[n, "split"]]
+
+          if (as.logical(split)) {
+            hddcddCell <- do.call(
+              "rbind",
+              lapply(list("A", "B"), function(suffix) {
+                tmp <- makeCalculations(f = files,
+                                        m = model,
+                                        n = n,
+                                        t_lim = t_lim,
+                                        countries = countries,
+                                        pop = pop,
+                                        hddcddFactor = hddcddFactor,
+                                        bait = bait,
+                                        wBAIT = wBAIT,
+                                        params = baitPars,
+                                        suffix = suffix)
+                return(tmp)
+              }
+              )
+            )
+          }
+
+          else {
+            hddcddCell <- makeCalculations(f = files,
+                                           m = model,
+                                           n = n,
+                                           t_lim = t_lim,
+                                           countries = countries,
+                                           pop = pop,
+                                           hddcddFactor = hddcddFactor,
+                                           bait = bait,
+                                           wBAIT = wBAIT,
+                                           params = baitPars)
+          }
+
+          hddcddCell <- hddcddCell %>%
+            mutate("model" = model,
+                   "ssp" = ssp,
+                   "rcp" = rcp)
+
+          return(hddcddCell)
+        }
+      )
+    )
+  }
+
 
   rownames(hddcdd) <- c()
 

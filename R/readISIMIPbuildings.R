@@ -121,7 +121,13 @@ readISIMIPbuildings <- function(subtype) {
 
   else if (vars[["variable"]] == "population") {
     fpath <- file.path(vars[["variable"]], vars[["scenario"]], subtype)
-    r <- suppressWarnings(terra::rast(fpath, subds = "total-population"))
+
+    if (vars[["scenario"]] == "picontrol") {
+      r <- suppressWarnings(terra::rast(fpath))
+    }
+    else {
+      r <- suppressWarnings(terra::rast(fpath, subds = "total-population"))
+    }
 
     subtype <- gsub(".nc", "", subtype)
 
