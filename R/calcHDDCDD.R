@@ -714,9 +714,9 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
   }
 
   else {
-    ssp   <- files$ssp[[1]]
-    rcp   <- files$rcp[[1]]
-    model <- files$gcm[[1]]
+    ssp   <- unique(files$ssp[files$ssp != ""])
+    rcp   <- unique(files$rcp[files$rcp != ""])
+    model <- unique(files$gcm[files$gcm != ""])
 
     fpop <- files %>% filter(variable == "pop")
     pop  <- readSource("ISIMIPbuildings", subtype = fpop$file,
@@ -732,7 +732,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
       lapply(
         seq(nrow(filter(files, files$variable == "tas"))),
         function(n) {
-          split <- files[files$variable == "tas" & files$gcm == m,][[n, "split"]]
+          split <- files[files$variable == "tas" & files$gcm == model,][[n, "split"]]
 
           if (as.logical(split)) {
             hddcddCell <- do.call(
