@@ -347,8 +347,8 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
     # add tolerance of 0.04K to avoid machine precision errors
     factors <- factors %>%
       filter(.data[["typeDD"]] == .typeDD, .data[["T_lim"]] == .tlim) %>%
-      dplyr::reframe(from = .data[["T_amb_K"]] - 0.04,
-                     to = .data[["T_amb_K"]] + 0.04,
+      dplyr::reframe(from = .data[["T_amb_K"]] - 0.049,
+                     to = .data[["T_amb_K"]] + 0.049,
                      becomes = .data[["factor"]]) %>%
       data.matrix()
 
@@ -418,7 +418,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
         checkDates(temp)
 
       # calculate bait
-      temp <- calcBAIT(baitInout, temp, weight = wBAIT, params = params)
+      temp <- calcBAIT(baitInput, temp, weight = wBAIT, params = params)
 
       # convert back to [K]
       temp <- temp + 273.15   # [K]
