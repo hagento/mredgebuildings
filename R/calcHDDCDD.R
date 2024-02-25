@@ -221,8 +221,8 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
     print("calc bait")
     bait <- temp + weight[[1]]*s + weight[[2]]*w + weight[[3]]*h*t
 
-    bait <- smooth(bait, temp, weight)
-    bait <- blend(bait, temp)
+    bait <- smooth(bait, weight)
+    bait <- blend(bait, temp, weight)
 
     return(bait)
   }
@@ -381,11 +381,11 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
         years_r, function(y) {
           tmp <- subset(r, y) * subset(weight, y) * mask
           tmp_tot <- subset(weight, y) * mask
-          tmp <-cellStats(as(tmp, "Raster"), "sum") /
-           cellStats(as(tmp_tot, "Raster"), "sum")
+          tmp_sum <- terra::global(tmp, "sum", na.rm = TRUE)$sum /
+            terra::global(tmp_tot, "sum", na.rm = TRUE)$sum
           tmp <- data.frame("region" = names(mask),
                             "period" = y,
-                            "value"  = round(tmp, 1))
+                            "value"  = round(tmp_sum, 3))
           rownames(tmp) <- c()
           return(tmp)
         }
