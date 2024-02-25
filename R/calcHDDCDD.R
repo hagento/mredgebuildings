@@ -221,8 +221,8 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
     print("calc bait")
     bait <- temp + weight[[1]]*s + weight[[2]]*w + weight[[3]]*h*t
 
-    bait <- smooth(bait, temp, weight)
-    bait <- blend(bait, temp)
+    bait <- smooth(bait, weight)
+    bait <- blend(bait, temp, weight)
 
     return(bait)
   }
@@ -347,8 +347,8 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
     # add tolerance of 0.04K to avoid machine precision errors
     factors <- factors %>%
       filter(.data[["typeDD"]] == .typeDD, .data[["T_lim"]] == .tlim) %>%
-      dplyr::reframe(from = .data[["T_amb_K"]] - 0.04,
-                     to = .data[["T_amb_K"]] + 0.04,
+      dplyr::reframe(from = .data[["T_amb_K"]] - 0.049,
+                     to = .data[["T_amb_K"]] + 0.049,
                      becomes = .data[["factor"]]) %>%
       data.matrix()
 
@@ -381,11 +381,11 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
         years_r, function(y) {
           tmp <- subset(r, y) * subset(weight, y) * mask
           tmp_tot <- subset(weight, y) * mask
-          tmp <-cellStats(as(tmp, "Raster"), "sum") /
-           cellStats(as(tmp_tot, "Raster"), "sum")
+          tmp_sum <- terra::global(tmp, "sum", na.rm = TRUE)$sum /
+            terra::global(tmp_tot, "sum", na.rm = TRUE)$sum
           tmp <- data.frame("region" = names(mask),
                             "period" = y,
-                            "value"  = round(tmp, 1))
+                            "value"  = round(tmp_sum, 3))
           rownames(tmp) <- c()
           return(tmp)
         }
@@ -418,7 +418,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
         checkDates(temp)
 
       # calculate bait
-      temp <- calcBAIT(baitInout, temp, weight = wBAIT, params = params)
+      temp <- calcBAIT(baitInput, temp, weight = wBAIT, params = params)
 
       # convert back to [K]
       temp <- temp + 273.15   # [K]
