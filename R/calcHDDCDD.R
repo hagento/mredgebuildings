@@ -362,6 +362,9 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
 
     names(hddcdd) <- gsub("_", "", names(hddcdd))
 
+    print(names(hddcdd)[[1]])
+    print(terra::values(hddcdd[[1]]))
+
     return(hddcdd)
   }
 
@@ -371,6 +374,9 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
     years_r <- names(r)
     years_w <- names(weight)
 
+    print(paste("years_r:", years_r))
+    print(paste("years_w:", years_w))
+
     if (!all(years_r %in% years_w)) {
       stop("Time periods of raster file and aggregation weights do not match.")
     }
@@ -379,10 +385,16 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
     hddcddAgg <- do.call(
       "rbind", lapply(
         years_r, function(y) {
+          browser()
           tmp <- subset(r, y) * subset(weight, y) * mask
           tmp_tot <- subset(weight, y) * mask
-          tmp_sum <- terra::global(tmp, "sum", na.rm = TRUE)$sum /
-            terra::global(tmp_tot, "sum", na.rm = TRUE)$sum
+
+          tmp_sum <- terra::global(tmp, "sum", na.rm = TRUE)$sum
+          tmp_tot_sum <- terra::global(tmp_tot, "sum", na.rm = TRUE)$sum
+          print(paste("tmp_sum:\t", tmp_sum))
+          print(paste("tmp_tot_sum:\t", tmp_tot_sum))
+          tmp <- tmp_sum / tmp_tot_sum
+          print(paste("tmp:", tmp))
           tmp <- data.frame("region" = names(mask),
                             "period" = y,
                             "value"  = round(tmp_sum, 3))
@@ -556,7 +568,8 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
 
   # threshold temperature for heating and cooling [C]
   # NOTE: Staffel gives global average of T_heat = 14, T_cool = 20
-  t_lim <- list("HDD" = seq(12, 18), "CDD" = seq(20, 26))
+  # t_lim <- list("HDD" = seq(12, 18), "CDD" = seq(20, 26))
+  t_lim <- list("HDD" = seq(14), "CDD" = seq(22))
 
   # standard deviations for temperature distributions
   tlim_std <- 5   # threshold
