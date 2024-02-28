@@ -361,10 +361,6 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
     hddcdd <- tapp(hddcdd, "years", fun = sum, na.rm = TRUE)
 
     names(hddcdd) <- gsub("_", "", names(hddcdd))
-
-    print(names(hddcdd)[[1]])
-    print(terra::values(hddcdd[[1]]))
-
     return(hddcdd)
   }
 
@@ -387,17 +383,14 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
         years_r, function(y) {
           browser()
           tmp <- subset(r, y) * subset(weight, y) * mask
-          tmp_tot <- subset(weight, y) * mask
+          tmpTot <- subset(weight, y) * mask
 
-          tmp_sum <- terra::global(tmp, "sum", na.rm = TRUE)$sum
-          tmp_tot_sum <- terra::global(tmp_tot, "sum", na.rm = TRUE)$sum
-          print(paste("tmp_sum:\t", tmp_sum))
-          print(paste("tmp_tot_sum:\t", tmp_tot_sum))
-          tmp <- tmp_sum / tmp_tot_sum
-          print(paste("tmp:", tmp))
+          tmpSum <- terra::global(tmp, "sum", na.rm = TRUE)$sum
+          tmpTotSum <- terra::global(tmpTot, "sum", na.rm = TRUE)$sum
+          tmp <- tmpSum / tmpTotSum
           tmp <- data.frame("region" = names(mask),
                             "period" = y,
-                            "value"  = round(tmp_sum, 3))
+                            "value"  = round(tmp, 3))
           rownames(tmp) <- c()
           return(tmp)
         }
