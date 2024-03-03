@@ -54,6 +54,7 @@ calcFEUE <- function() {
   # OUTPUT ---------------------------------------------------------------------
 
   ue <- ue %>%
+    select("region", "period", "carrier", "enduse", "unit", "value") %>%
     as.quitte() %>%
     as.magpie()
 

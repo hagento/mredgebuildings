@@ -556,7 +556,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
 
   # PARAMETERS------------------------------------------------------------------
 
-  terra::setGDALconfig(c("BIGTIFF = YES"))
+  # terra::setGDALconfig(c("BIGTIFF = YES"))
 
 
   # threshold temperature for heating and cooling [C]
