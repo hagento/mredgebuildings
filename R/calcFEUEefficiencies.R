@@ -112,14 +112,18 @@ calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
 
   # NOTE: Countries missing the entire period range for a EC-EU-combination
   #       will be filled-up w/ non-corrected efficiency projections.
-
   dataHist <- dataHist %>%
     left_join(corrFactors, by = c("region", "period", "enduse", "carrier")) %>%
     mutate(value = ifelse(is.na(.data[["factor"]]),
                           .data[["pred"]],
-                          ifelse(is.na(.data[["efficiency"]]),
-                                 .data[["pred"]] * .data[["factor"]],
-                                 .data[["efficiency"]])))
+                          ifelse(is.infinite(.data[["factor"]]),
+                                 .data[["pred"]],
+                                 ifelse(is.na(.data[["efficiency"]]),
+                                        .data[["pred"]] * .data[["factor"]],
+                                        .data[["efficiency"]])
+                                 )
+                          )
+           )
 
 
   # Trim Dataframe
@@ -150,13 +154,14 @@ calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
 
   # Weights = FE?
 
-  efficiencies <- dataHist %>%
-    select(-"gdppop", -"efficiency", -"pred", -"factor") %>%
+  efficiencies <- efficiencies %>%
+    as.quitte() %>%
     as.magpie()
 
   return(list(
     x = efficiencies,
     weights = NULL,
+    unit = "",
     min = 0,
     description = "Historical Conversion Efficiencies from FE to UE"
   ))

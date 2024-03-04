@@ -146,7 +146,7 @@ calcEfficiencyRegression <- function() {
     x = as.magpie(parsFull),
     weight = NULL,
     description = "Regression Parameter for FE-UE-Efficiency Projection",
-    unit = "a.u."
+    unit = ""
   ))
 
 }
