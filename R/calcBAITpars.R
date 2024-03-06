@@ -62,7 +62,8 @@ calcBAITpars <- function(model = "GFDL-ESM4") {
   USE.NAMES = FALSE) %>%
     rast()
 
-
+  rm(data)
+  gc()
 
   # OUTPUT----------------------------------------------------------------------
 
