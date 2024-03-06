@@ -93,8 +93,8 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
 
   # threshold temperature for heating and cooling [C]
   # NOTE: Staffel at. al 2023 gives global average of T_heat = 14, T_cool = 20
-  tLim <- list("HDD" = seq(12, 22), "CDD" = seq(20, 26))
-  #tLim <- list("HDD" = seq(14,16), "CDD" = seq(22,24))
+  # tLim <- list("HDD" = seq(12, 22), "CDD" = seq(20, 26))
+  tLim <- list("HDD" = c(14), "CDD" = c(22))
 
   # standard deviations for temperature distributions
   tlimStd <- 5   # threshold
@@ -171,56 +171,48 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
   pop  <- readSource("ISIMIPbuildings", subtype = fpop$file,
                      convert = FALSE)
 
+  # calculate regression parameters for climate variables
   if (bait) {
     baitPars <- calcOutput("BAITpars", aggregate = FALSE, model = model)
     names(baitPars) <- parNames
-    # baitPars <- NULL
   }
 
-  #Rprofmem("../memlog.out")
-
+  # calculate degree days
   hddcdd <- do.call( # file iteration
     "rbind",
     lapply(
       seq(nrow(filter(files, files$variable == "tas"))),
       function(n) {
-        split <- files[files$variable == "tas" & files$gcm == model,][[n, "split"]]
 
-        # split large raster files to save memory / speed up processing
-        if (as.logical(split)) {
-          hddcddCell <- do.call(
-            "rbind",
-            lapply(list("A", "B"), function(suffix) {
-              tmp <- makeCalculations(f = files,
-                                      m = model,
-                                      n = n,
-                                      t_lim = tLim,
-                                      countries = countries,
-                                      pop = pop,
-                                      hddcddFactor = hddcddFactor,
-                                      bait = bait,
-                                      wBAIT = wBAIT,
-                                      params = baitPars,
-                                      suffix = suffix)
-              return(tmp)
+        # split large raster files to single years to save memory / speed up processing
+        yStart <- files[files$variable == "tas" & files$gcm == model,][[n, "start"]] %>%
+          as.numeric()
+
+        yEnd   <- files[files$variable == "tas" & files$gcm == model,][[n, "end"]] %>%
+          as.numeric()
+
+        # define index range based on year range
+        nSplit <- seq(1, yEnd - yStart + 1) %>%
+          as.character()
+
+        hddcddCell <- do.call(
+          "rbind",
+          lapply(nSplit, function(suffix) {
+            tmp <- makeCalculations(f = files,
+                                    m = model,
+                                    n = n,
+                                    t_lim = tLim,
+                                    countries = countries,
+                                    pop = pop,
+                                    hddcddFactor = hddcddFactor,
+                                    bait = bait,
+                                    wBAIT = wBAIT,
+                                    params = baitPars,
+                                    suffix = suffix)
+            return(tmp)
             }
-            )
           )
-        }
-
-        # smaller raster files
-        else {
-          hddcddCell <- makeCalculations(f = files,
-                                         m = model,
-                                         n = n,
-                                         t_lim = tLim,
-                                         countries = countries,
-                                         pop = pop,
-                                         hddcddFactor = hddcddFactor,
-                                         bait = bait,
-                                         wBAIT = wBAIT,
-                                         params = baitPars)
-        }
+        )
 
         hddcddCell <- hddcddCell %>%
           mutate("model" = model,
@@ -233,8 +225,6 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
       }
     )
   )
-
-  #Rprof(NULL)
 
   rownames(hddcdd) <- c()
 
@@ -468,6 +458,8 @@ blend <- function(bait, tas, weight) {
 #' their real value to the their expected value w.r.t. the near-surface temperature
 #' (see \code{\link{cfac}}). These are then incorporated in a weighted sum to
 #' account for the respective influence of each climate parameter on BAIT.
+#'
+#'
 #' The raster data containing BAIT is smoothed to account for the
 #' buildings' thermal inertia (see \code{\link{smooth}}) and blended with the
 #' near-surface temperature (see \code{\link{blend}}).
@@ -493,22 +485,26 @@ calcBAIT <- function(baitInput, tasData, weight=NULL, params=NULL) {
   dates <- names(tasData)
 
   print("calc s")
-  s <- baitInput$rsds   -  cfac(tasData, type="s", params = c(params[["aRSDS"]], params[["bRSDS"]]))
+  s <- baitInput$rsds  -  cfac(tasData, type="s", params = c(params[["aRSDS"]], params[["bRSDS"]]))
   print("calc w")
-  w <- baitInput$sfc    -  cfac(tasData, type="w", params = c(params[["aSFC"]], params[["bSFC"]]))
+  w <- baitInput$sfc   -  cfac(tasData, type="w", params = c(params[["aSFC"]], params[["bSFC"]]))
   print("calc h")
-  h <- baitInput$huss   -  cfac(tasData, type="h", params = c(params[["aHUSS"]], params[["bHUSS"]]))
+  h <- baitInput$huss  -  cfac(tasData, type="h", params = c(params[["aHUSS"]], params[["bHUSS"]]))
   print("calc t")
-  t <- tasData  -  cfac(tasData, type="t", params = NULL)
+  t <- tasData         -  cfac(tasData, type="t", params = NULL)
 
   # calc bait
   print("calc bait")
   bait <- tasData + weight[["wRSDS"]]*s + weight[["wSFC"]]*w + weight[["wHUSS"]]*h*t
 
-  bait <- smooth(bait, weight)
-  bait <- blend(bait, tasData, weight)
+  # smooth bait
+  temp <- smooth(temp, wBAIT)
+
+  # # blend bait
+  temp <- blend(temp, tasData, wBAIT)
 
   rm(s, w, h, t)
+  gc()
 
   return(bait)
 }
@@ -669,7 +665,7 @@ calcHDDCDDFactors <- function(tlow, tup, tlim, tambStd=5, tlimStd=5) {
 
 calcCellHDDCDD <- function(temp, typeDD, tlim, factors) {
   # extract years
-  dates <- names(temp)
+  dates <- as.Date(names(temp))
 
   # add tolerance of 0.04K to avoid machine precision errors
   factors <- factors %>%
@@ -682,12 +678,14 @@ calcCellHDDCDD <- function(temp, typeDD, tlim, factors) {
   # swap ambient temperature values with corresponding DD values
   hddcdd <- classify(temp, factors)
 
-  terra::time(hddcdd) <- as.Date(dates)
+  terra::time(hddcdd) <- dates
 
   # aggregate to yearly HDD/CDD [K.d/a]
-  hddcdd <- tapp(hddcdd, "years", fun = sum, na.rm = TRUE)
+  # hddcdd <- tapp(hddcdd, "years", fun = sum, na.rm = TRUE)
+  hddcdd <- terra::app(hddcdd, "years", fun = sum, na.rm = TRUE) # for single year data
 
-  names(hddcdd) <- gsub("_", "", names(hddcdd))
+  # names(hddcdd) <- gsub("_", "", names(hddcdd))
+  names(hddcdd) <- unique(format(dates, "%Y"))
   return(hddcdd)
 }
 
@@ -788,6 +786,8 @@ calcStackHDDCDD <- function(ftas, tlim, countries, pop, factors, bait,
     # calculate bait
     temp <- calcBAIT(baitInput, tasData, weight = wBAIT, params = params)
 
+    rm(baitInput)
+
     # convert back to [K]
     temp <- temp + 273.15   # [K]
   }
@@ -810,29 +810,16 @@ calcStackHDDCDD <- function(ftas, tlim, countries, pop, factors, bait,
               hddcddAgg <- calcCellHDDCDD(temp, typeDD, t, factors)
 
               # write raster files
-              yStart <- fSplit[[8]]
+              # y <- names(hddcddAgg)
+              #
+              # rname <- paste0(fSplit[[1]], "_", y, "_", fSplit[[4]], "_", typeDD, "_", t)
+              #
+              # rname <- paste0(rname, if (bait) "_bait" else "", ".nc")
+              #
+              # terra::writeCDF(hddcddAgg,
+              #                 file.path("/p/tmp/hagento/output/rasterdata", fSplit[[1]], rname),
+              #                 overwrite = TRUE)
 
-              if (length(fSplit) == 10){
-                if (gsub(".nc", "", fSplit[[10]]) == "A") {
-                  yEnd <- as.character(as.numeric(fSplit[[9]]) - 5)
-                }
-                else {
-                  yStart <- as.character(as.numeric(fSplit[[9]]) - 4)
-                  yEnd <- fSplit[[9]]
-                }
-              }
-              else {
-                yEnd   <- gsub(".nc", "", fSplit[[9]])
-              }
-
-              rname <- paste0(fSplit[[1]], "_", yStart, "-", yEnd, "_", fSplit[[4]], "_", typeDD, "_", t)
-
-              rname <- paste0(rname, if (bait) "_bait" else "", ".nc")
-
-              terra::writeCDF(hddcddAgg,
-                              file.path("/p/tmp/hagento/output/rasterdata", fSplit[[1]], rname),
-                              overwrite = TRUE)
-            
               # aggregate to regional resolution
               hddcddAgg <- hddcddAgg %>%
                 aggCells(pop, countries) %>%

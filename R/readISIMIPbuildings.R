@@ -55,24 +55,24 @@ readISIMIPbuildings <- function(subtype) {
       vars[["scenario"]] <- subSplit[[4]]
       vars[["model"]]    <- subSplit[[1]]
 
-      if (grepl("A", tail(subSplit, 1))) {
-        vars[["yStart"]] <- subSplit[[length(subSplit) - 2]]
+      # raster data will be split into individual years
+      if (length(subSplit) > 9) {
+        # split index defines the year
+        vars[["idx"]] <- gsub(".nc", "", tail(subSplit, 1)) %>%
+          as.numeric()
 
-        yEnd <- as.numeric(vars[["yStart"]]) + 4 # 5 year period
-        vars[["yEnd"]] <- as.character(yEnd)
+        # temporal range of data
+        vars[["yStart"]] <- subSplit[[8]]
+        vars[["yEnd"]]   <- subSplit[[9]]
 
-        vars[["subtype"]] <- sub("_A.nc", ".nc", subtype)
-      }
+        # year of interest
+        vars[["year"]] <- seq(vars[["yStart"]] %>%
+                                as.numeric(),
+                              vars[["yEnd"]] %>%
+                                as.numeric())[[vars[["idx"]]]] %>%
+          as.character()
 
-      else if (grepl("B", tail(subSplit, 1))) {
-        vars[["yEnd"]]   <- subSplit[[length(subSplit) - 1]]
-
-        yStart <- as.numeric(vars[["yEnd"]]) - 4 # 5 year period
-        vars[["yStart"]] <- as.character(yStart)
-
-        vars[["yStartFile"]] <- subSplit[[length(subSplit) - 2]]
-
-        vars[["subtype"]] <- sub("_B.nc", ".nc", subtype)
+        vars[["subtype"]] <- sub("_(1[0-9]|\\d)\\.nc$", ".nc", subtype)
       }
     }
 
@@ -83,28 +83,29 @@ readISIMIPbuildings <- function(subtype) {
 
 
   # determine period range of subset
-  getIdxRange <- function(yStart, yEnd, vars) {
-    dStart <- as.Date(paste0(yStart, "-01-01"))
-    dEnd   <- as.Date(paste0(yEnd,   "-12-31"))
-    dRange <- seq.Date(from = dStart, to = dEnd, by = "day")
+  getRanges <- function(vars) {
+    # total temporal range
+    dRange <- seq.Date(from = as.Date(paste0(vars[["yStart"]], "-01-01")),
+                       to = as.Date(paste0(vars[["yEnd"]],   "-12-31")),
+                       by = "day")
 
-    if (is.null(vars[["yStartFile"]])) {
-      idx <- seq(1:length(dRange))
-    }
-    else {
-      dStartFile <- as.Date(paste0(vars[["yStartFile"]], "-01-01"))
-      dRangeFile <- seq.Date(from = dStartFile, to = dEnd, by = "day")
-      idx <- seq(length(dRangeFile) - length(dRange) + 1, length(dRangeFile))
-    }
+    # temporal range of interest
+    yRange <- seq.Date(from = as.Date(paste0(vars[["year"]], "-01-01")),
+                       to   = as.Date(paste0(vars[["year"]], "-12-31")),
+                       by   = "day")
 
-    return(idx)
+    # indices of range of interest
+    idxRange <- match(yRange, dRange)
+
+    return(list("yRange"   = yRange,
+                "idxRange" = idxRange))
   }
 
 
   # PROCESS DATA----------------------------------------------------------------
-
   vars <- splitSubtype(subtype)
 
+  # region mask
   if (vars[["variable"]] == "countrymask"){
     fpath <- file.path("countrymasks", subtype)
     varNames <- names(ncdf4::nc_open(fpath)[["var"]])
@@ -119,6 +120,7 @@ readISIMIPbuildings <- function(subtype) {
   }
 
 
+  # population
   else if (vars[["variable"]] == "population") {
     fpath <- file.path(vars[["variable"]], vars[["scenario"]], subtype)
 
@@ -133,10 +135,10 @@ readISIMIPbuildings <- function(subtype) {
 
     # rename years
     years <- tail(strsplit(subtype, "_")[[1]], 2)
-    names(r) <- paste0("y", years[1]:years[2])
+    names(r) <- years[1]:years[2]
 
     # filter relevant years
-    r <- terra::subset(r, as.numeric(substr(names(r), 2, 5)) > firstHistYear)
+    r <- terra::subset(r, as.numeric(names(r)) >= firstHistYear)
 
     # aggregate to common resolution of 0.5 deg
     if (any(raster::res(r) != 0.5)) {
@@ -150,13 +152,18 @@ readISIMIPbuildings <- function(subtype) {
   }
 
 
+  # climate data
   else if (any(vars[["variable"]] %in% baitVars)) {
-
+    # slice single years
     if (!is.null(vars[["yStart"]])) {
-      fpath <- file.path(vars[["variable"]], vars[["scenario"]], vars[["model"]], vars[["subtype"]])
-      idx <- getIdxRange(vars[["yStart"]], vars[["yEnd"]], vars)
-      r <- suppressWarnings(terra::rast(fpath, lyrs = idx))
+      fpath  <- file.path(vars[["variable"]], vars[["scenario"]], vars[["model"]], vars[["subtype"]])
+      ranges <- getRanges(vars)
+
+      r        <- suppressWarnings(terra::rast(fpath, lyrs = ranges[["idxRange"]]))
+      names(r) <- ranges[["yRange"]]
     }
+
+    # full data set
     else {
       fpath <- file.path(vars[["variable"]], vars[["scenario"]], vars[["model"]], subtype)
       r <- suppressWarnings(terra::rast(fpath))

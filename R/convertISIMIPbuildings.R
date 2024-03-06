@@ -16,17 +16,7 @@ convertISIMIPbuildings <- function(x, subtype) {
   # fill dates for unnamed data
   fillDates <- function(r, filename, pop = FALSE) {
 
-    if (grepl("_A.nc|_A.nc4", filename)) {
-      yStart <- stringr::str_sub(filename, -14, -11)
-    }
-    else if (grepl("_B.nc|_B.nc4", filename)) {
-      yEnd   <- stringr::str_sub(filename, -9, -6)
-      yStart <- as.character(as.numeric(yEnd) - 4)
-    }
-    else {
-      yStart <- stringr::str_sub(filename, -12, -9)
-    }
-
+    yStart <- stringr::str_sub(filename, -12, -9)
     n <- terra::nlyr(r)
 
     if (!pop) {
@@ -61,9 +51,12 @@ convertISIMIPbuildings <- function(x, subtype) {
   if (grepl(paste(edgeVars, collapse = "|"), subtype)) {
     var <- edgeVars[str_detect(subtype, edgeVars)]
 
+
     if (var == "population") {
       x <- fillDates(x, subtype, pop = TRUE)
-    } else {
+    }
+    # dates have specific length of n = 10
+    else if (!all(nchar(names(x)) == 10)) {
       x <- fillDates(x, subtype)
     }
 
