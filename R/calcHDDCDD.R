@@ -89,12 +89,13 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
   setGDALconfig(c("BIGTIFF = YES"))
   #terraOptions(memfrac = 0.8)
 
+  cacheDir <- "/p/projects/rd3mod/inputdata/sources/BAITpars"
 
 
   # threshold temperature for heating and cooling [C]
   # NOTE: Staffel at. al 2023 gives global average of T_heat = 14, T_cool = 20
-  # tLim <- list("HDD" = seq(12, 22), "CDD" = seq(20, 26))
-  tLim <- list("HDD" = c(14), "CDD" = c(22))
+  tLim <- list("HDD" = seq(12, 22), "CDD" = seq(20, 26))
+  #tLim <- list("HDD" = c(14), "CDD" = c(22))
 
   # standard deviations for temperature distributions
   tlimStd <- 5   # threshold
@@ -173,7 +174,11 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
 
   # calculate regression parameters for climate variables
   if (bait) {
-    baitPars <- calcOutput("BAITpars", aggregate = FALSE, model = model)
+    baitPars <- calcOutput("BAITpars", 
+                           aggregate = FALSE, 
+                           model     = model,
+                           cacheDir  = cacheDir)
+    
     names(baitPars) <- parNames
   }
 
@@ -498,10 +503,10 @@ calcBAIT <- function(baitInput, tasData, weight=NULL, params=NULL) {
   bait <- tasData + weight[["wRSDS"]]*s + weight[["wSFC"]]*w + weight[["wHUSS"]]*h*t
 
   # smooth bait
-  temp <- smooth(temp, wBAIT)
-
+  bait <- smooth(bait, weight)
+ 
   # # blend bait
-  temp <- blend(temp, tasData, wBAIT)
+  bait <- blend(bait, tasData, weight)
 
   rm(s, w, h, t)
   gc()
@@ -677,7 +682,7 @@ calcCellHDDCDD <- function(temp, typeDD, tlim, factors) {
 
   # swap ambient temperature values with corresponding DD values
   hddcdd <- classify(temp, factors)
-
+ 
   terra::time(hddcdd) <- dates
 
   # aggregate to yearly HDD/CDD [K.d/a]
@@ -810,15 +815,15 @@ calcStackHDDCDD <- function(ftas, tlim, countries, pop, factors, bait,
               hddcddAgg <- calcCellHDDCDD(temp, typeDD, t, factors)
 
               # write raster files
-              # y <- names(hddcddAgg)
-              #
-              # rname <- paste0(fSplit[[1]], "_", y, "_", fSplit[[4]], "_", typeDD, "_", t)
-              #
-              # rname <- paste0(rname, if (bait) "_bait" else "", ".nc")
-              #
-              # terra::writeCDF(hddcddAgg,
-              #                 file.path("/p/tmp/hagento/output/rasterdata", fSplit[[1]], rname),
-              #                 overwrite = TRUE)
+              y <- names(hddcddAgg)
+             
+              rname <- paste0(fSplit[[1]], "_", y, "_", fSplit[[4]], "_", typeDD, "_", t)
+
+              rname <- paste0(rname, if (bait) "_bait" else "", ".nc")
+              
+              terra::writeCDF(hddcddAgg,
+                              file.path("/p/tmp/hagento/output/rasterdata", fSplit[[1]], rname),
+                              overwrite = TRUE)
 
               # aggregate to regional resolution
               hddcddAgg <- hddcddAgg %>%
