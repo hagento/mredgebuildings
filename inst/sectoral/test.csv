@@ -1,0 +1,7 @@
+gcm,rcp,ssp,variable,start,end,folder,file,split
+GFDL-ESM4,historical,historical,rsds,2011,2014,,gfdl-esm4_r1i1p1f1_w5e5_historical_rsds_global_daily_2011_2014.nc,FALSE
+GFDL-ESM4,historical,historical,huss,2011,2014,,gfdl-esm4_r1i1p1f1_w5e5_historical_huss_global_daily_2011_2014.nc,FALSE
+GFDL-ESM4,historical,historical,sfcwind,2011,2014,,gfdl-esm4_r1i1p1f1_w5e5_historical_sfcwind_global_daily_2011_2014.nc,FALSE
+GFDL-ESM4,historical,historical,tas,2011,2014,,gfdl-esm4_r1i1p1f1_w5e5_historical_tas_global_daily_2011_2014.nc,FALSE
+,,historical,pop,1861,2005,,population_histsoc_30arcmin_annual_1901_2014.nc,
+,,,CountryMask,,,/p/projects/isimip/isimip/ISIMIP3b/InputData/geo_conditions/countrymasks,countrymasks.nc,

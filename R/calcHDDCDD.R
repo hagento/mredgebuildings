@@ -95,7 +95,6 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
   # threshold temperature for heating and cooling [C]
   # NOTE: Staffel at. al 2023 gives global average of T_heat = 14, T_cool = 20
   tLim <- list("HDD" = seq(12, 22), "CDD" = seq(18, 26))
-  #tLim <- list("HDD" = c(14), "CDD" = c(22))
 
   # standard deviations for temperature distributions
   tlimStd <- 2   # threshold
@@ -149,7 +148,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
   # READ-IN DATA----------------------------------------------------------------
 
   # list of files that are processed
-  files <- toolGetMapping(mappingFile, type = "sectoral", where = "mappingfolder") %>%
+  files <- toolGetMapping(mappingFile, type = "sectoral", where = "mredgebuildings") %>%
     filter(variable != "")
 
   # cells -> country mask
@@ -177,13 +176,12 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
 
   # calculate regression parameters for climate variables
   if (bait) {
-    baitPars <- calcOutput("BAITpars", 
-                           aggregate = FALSE, 
+    baitPars <- calcOutput("BAITpars",
+                           aggregate = FALSE,
                            model     = model,
                            cacheDir  = cacheDir)
-    
+
     names(baitPars) <- parNames
-    ##baitPars <- NULL
   }
 
   # calculate degree days
@@ -360,9 +358,12 @@ prepBaitInput <- function(frsds=NULL, fsfc=NULL, fhuss=NULL, baitInput=NULL, fil
   }
   else {
     input <- list(
-      "rsds" = readSource("ISIMIPbuildings", subtype = frsds, convert = TRUE),
-      "sfc"  = readSource("ISIMIPbuildings", subtype = fsfc,  convert = TRUE),
-      "huss" = readSource("ISIMIPbuildings", subtype = fhuss, convert = TRUE))
+      "rsds" = readSource("ISIMIPbuildings", subtype = frsds, convert = TRUE) %>%
+        subset(1:10),
+      "sfc"  = readSource("ISIMIPbuildings", subtype = fsfc,  convert = TRUE) %>%
+        subset(1:10),
+      "huss" = readSource("ISIMIPbuildings", subtype = fhuss, convert = TRUE) %>%
+        subset(1:10))
     return(input)
   }
 }
@@ -508,7 +509,7 @@ calcBAIT <- function(baitInput, tasData, weight=NULL, params=NULL) {
 
   # smooth bait
   bait <- smooth(bait, weight)
- 
+
   # # blend bait
   bait <- blend(bait, tasData, weight)
 
@@ -669,7 +670,7 @@ calcHDDCDDFactors <- function(tlow, tup, tlim, tambStd=5, tlimStd=5, norm) {
                                             "typeDD"       = typeDD)
                         }
                       }
-                    return(tmp)			
+                    return(tmp)
                   }
                 )
               )
@@ -695,6 +696,7 @@ calcHDDCDDFactors <- function(tlow, tup, tlim, tambStd=5, tlimStd=5, norm) {
 #' @importFrom terra classify tapp
 
 calcCellHDDCDD <- function(temp, typeDD, tlim, factors) {
+  browser()
   # extract years
   dates <- as.Date(names(temp))
 
@@ -710,7 +712,7 @@ calcCellHDDCDD <- function(temp, typeDD, tlim, factors) {
 
   # swap ambient temperature values with corresponding DD values
   hddcdd <- classify(temp, factors)
- 
+
   terra::time(hddcdd) <- dates
 
   # aggregate to yearly HDD/CDD [K.d/a]
@@ -803,7 +805,8 @@ calcStackHDDCDD <- function(ftas, tlim, countries, pop, factors, bait,
                             params = NULL) {
 
   # read cellular temperature
-  temp <- readSource("ISIMIPbuildings", subtype = ftas, convert = TRUE)
+  temp <- readSource("ISIMIPbuildings", subtype = ftas, convert = TRUE) %>%
+    subset(1:10)
 
   dates <- names(temp)
 
@@ -840,18 +843,19 @@ calcStackHDDCDD <- function(ftas, tlim, countries, pop, factors, bait,
         do.call(
           "rbind", lapply(
             tlim[[typeDD]], function(t) {
+              browser()
               hddcddAgg <- calcCellHDDCDD(temp, typeDD, t, factors)
 
               # write raster files
               y <- names(hddcddAgg)
-             
+
               rname <- paste0(fSplit[[1]], "_", y, "_", fSplit[[4]], "_", typeDD, "_", t)
 
               rname <- paste0(rname, if (bait) "_bait" else "", ".nc")
-              
-              terra::writeCDF(hddcddAgg,
-                              file.path("/p/tmp/hagento/output/rasterdata", fSplit[[1]], rname),
-                              overwrite = TRUE)
+
+              # terra::writeCDF(hddcddAgg,
+              #                 file.path("/p/tmp/hagento/output/rasterdata", fSplit[[1]], rname),
+              #                 overwrite = TRUE)
 
               # aggregate to regional resolution
               hddcddAgg <- hddcddAgg %>%
