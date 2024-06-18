@@ -219,7 +219,7 @@ calcHDDCDD <- function(mappingFile,
             seq_len(nrow(filter(files, files$variable == "tas"))),
             function(n) {
               pop <- readSource("ISIMIPbuildings", subtype = fpop, convert = FALSE)
-              ssp <- strsplit("population_ssp1_30arcmin_annual_2015_2100.nc", "_")[[1]][[2]] %>%
+              ssp <- strsplit(fpop, "_")[[1]][[2]] %>%
                 toupper()
 
               split <- files[files$variable == "tas" & files$gcm == model, ][[n, "split"]]
