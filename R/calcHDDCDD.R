@@ -141,6 +141,13 @@ calcHDDCDD <- function(mappingFile,
   # (note: this is really just a check in case calcBAITpars returns no layer names)
   parNames <- c("aRSDS", "bRSDS", "aSFC", "bSFC", "aHUSS", "bHUSS")
 
+  # population files
+  popFiles <- c("population_ssp1_30arcmin_annual_2015_2100.nc",
+                "population_ssp2_30arcmin_annual_2015_2100.nc",
+                "population_ssp3_30arcmin_annual_2015_2100.nc",
+                "population_ssp4_30arcmin_annual_2015_2100.nc",
+                "population_ssp5_30arcmin_annual_2015_2100.nc")
+
 
 
   # READ-IN DATA----------------------------------------------------------------
@@ -156,9 +163,9 @@ calcHDDCDD <- function(mappingFile,
   countries <- readSource("ISIMIPbuildings", subtype = fCM, convert = FALSE)
 
   # population
-  fpop <- files %>% filter(.data[["variable"]] == "pop")
-  pop  <- readSource("ISIMIPbuildings", subtype = fpop$file,
-                     convert = FALSE)
+  # fpop <- files %>% filter(.data[["variable"]] == "pop")
+  # pop  <- readSource("ISIMIPbuildings", subtype = fpop$file,
+  #                    convert = FALSE)
 
   # extract run-specific variables
   ssp   <- unique(files$ssp[files$variable == "tas"])
@@ -189,8 +196,6 @@ calcHDDCDD <- function(mappingFile,
   #print(paste0("population file: ", fpop$file))
   #pop  <- readSource("ISIMIPbuildings", subtype = fpop$file,
   #                   convert = FALSE)
-  fpop <- "population_ssp2_30arcmin_annual_2015_2100.nc"
-  pop <- readSource("ISIMIPbuildings", subtype = fpop, convert = FALSE)
 
   # calculate regression parameters for climate variables
   if (bait) {
@@ -203,56 +208,68 @@ calcHDDCDD <- function(mappingFile,
   }
 
   # calculate degree days
-  hddcdd <- do.call( # file iteration
+  hddcdd <- do.call(
     "rbind",
     lapply(
-      seq_len(nrow(filter(files, files$variable == "tas"))),
-      function(n) {
-        split <- files[files$variable == "tas" & files$gcm == model, ][[n, "split"]]
+      popFiles,
+      function(fpop) {
+        do.call( # file iteration
+          "rbind",
+          lapply(
+            seq_len(nrow(filter(files, files$variable == "tas"))),
+            function(n) {
+              pop <- readSource("ISIMIPbuildings", subtype = fpop, convert = FALSE)
+              ssp <- strsplit("population_ssp1_30arcmin_annual_2015_2100.nc", "_")[[1]][[2]] %>%
+                toupper()
 
-        # split large raster files to save memory / speed up processing
-        if (as.logical(split)) {
-          hddcddCell <- do.call(
-            "rbind",
-            lapply(list("A", "B"), function(suffix) {
-              tmp <- makeCalculations(f = files,
-                                      m = model,
-                                      n = n,
-                                      tLim = tLim,
-                                      countries = countries,
-                                      pop = pop,
-                                      hddcddFactor = hddcddFactor,
-                                      bait = bait,
-                                      wBAIT = wBAIT,
-                                      params = baitPars,
-                                      suffix = suffix,
-                                      rasDir = rasDir)
-              return(tmp)
+              split <- files[files$variable == "tas" & files$gcm == model, ][[n, "split"]]
+
+              # split large raster files to save memory / speed up processing
+              if (as.logical(split)) {
+                hddcddCell <- do.call(
+                  "rbind",
+                  lapply(list("A", "B"), function(suffix) {
+                    tmp <- makeCalculations(f = files,
+                                            m = model,
+                                            n = n,
+                                            tLim = tLim,
+                                            countries = countries,
+                                            pop = pop,
+                                            hddcddFactor = hddcddFactor,
+                                            bait = bait,
+                                            wBAIT = wBAIT,
+                                            params = baitPars,
+                                            suffix = suffix,
+                                            rasDir = rasDir)
+                    return(tmp)
+                  }
+                  )
+                )
+              } else {
+                hddcddCell <- makeCalculations(f = files,
+                                               m = model,
+                                               n = n,
+                                               tLim = tLim,
+                                               countries = countries,
+                                               pop = pop,
+                                               hddcddFactor = hddcddFactor,
+                                               bait = bait,
+                                               wBAIT = wBAIT,
+                                               params = baitPars,
+                                               rasDir = rasDir)
+              }
+
+              hddcddCell <- hddcddCell %>%
+                mutate("model" = model,
+                       "ssp" = ssp,
+                       "rcp" = rcp)
+
+              gc()
+
+              return(hddcddCell)
             }
-            )
           )
-        } else {
-          hddcddCell <- makeCalculations(f = files,
-                                         m = model,
-                                         n = n,
-                                         tLim = tLim,
-                                         countries = countries,
-                                         pop = pop,
-                                         hddcddFactor = hddcddFactor,
-                                         bait = bait,
-                                         wBAIT = wBAIT,
-                                         params = baitPars,
-                                         rasDir = rasDir)
-        }
-
-        hddcddCell <- hddcddCell %>%
-          mutate("model" = model,
-                 "ssp" = ssp,
-                 "rcp" = rcp)
-
-        gc()
-
-        return(hddcddCell)
+        )
       }
     )
   )
