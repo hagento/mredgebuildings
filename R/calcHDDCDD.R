@@ -94,12 +94,12 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
 
   # threshold temperature for heating and cooling [C]
   # NOTE: Staffel at. al 2023 gives global average of T_heat = 14, T_cool = 20
-  tLim <- list("HDD" = seq(12, 22), "CDD" = seq(20, 26))
+  tLim <- list("HDD" = seq(12, 22), "CDD" = seq(18, 26))
   #tLim <- list("HDD" = c(14), "CDD" = c(22))
 
   # standard deviations for temperature distributions
-  tlimStd <- 5   # threshold
-  tambStd <- 5   # ambient
+  tlimStd <- 2   # threshold
+  tambStd <- 2   # ambient
 
   # range of pre-calculated HDD/CDD-values, e.g. [173, 348] K, converted to [C]
   tlow <- 173 - 273.15
@@ -161,16 +161,19 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
   # PROCESS DATA----------------------------------------------------------------
 
   # calculate HDD/CDD-factors
-  hddcddFactor <- calcHDDCDDFactors(tlow = tlow, tup = tup, tLim, tambStd, tlimStd)
+  hddcddFactor <- calcHDDCDDFactors(tlow = tlow, tup = tup, tLim, tambStd, tlimStd, norm = TRUE)
 
   ssp   <- unique(files$ssp[files$variable == "tas"])
   rcp   <- unique(files$rcp[files$variable == "tas"])
   model <- unique(files$gcm[files$variable == "tas"])
 
   # read population data
-  fpop <- files %>% filter(variable == "pop")
-  pop  <- readSource("ISIMIPbuildings", subtype = fpop$file,
-                     convert = FALSE)
+  #fpop <- files %>% filter(variable == "pop")
+  #print(paste0("population file: ", fpop$file))
+  #pop  <- readSource("ISIMIPbuildings", subtype = fpop$file,
+  #                   convert = FALSE)
+  fpop <- "population_ssp2_30arcmin_annual_2015_2100.nc"
+  pop <- readSource("ISIMIPbuildings", subtype = fpop, convert = FALSE)
 
   # calculate regression parameters for climate variables
   if (bait) {
@@ -180,6 +183,7 @@ calcHDDCDD <- function(mappingFile, bait=FALSE, multiscen = FALSE) {
                            cacheDir  = cacheDir)
     
     names(baitPars) <- parNames
+    ##baitPars <- NULL
   }
 
   # calculate degree days
@@ -550,7 +554,7 @@ calcBAIT <- function(baitInput, tasData, weight=NULL, params=NULL) {
 #' @importFrom stats dnorm
 #' @importFrom pracma integral2
 
-calcHDDCDDFactors <- function(tlow, tup, tlim, tambStd=5, tlimStd=5) {
+calcHDDCDDFactors <- function(tlow, tup, tlim, tambStd=5, tlimStd=5, norm) {
 
   # t1 : ambient temperature variable
   # t2 : limit temperature variable
@@ -578,7 +582,7 @@ calcHDDCDDFactors <- function(tlow, tup, tlim, tambStd=5, tlimStd=5) {
       }
     }
     else if (typeDD == "CDD") {
-      if (tlim - tamb > 2*stdDif) {
+      if (tlim - tamb > stdDif) {
         check <- FALSE
       }
     }
@@ -604,46 +608,68 @@ calcHDDCDDFactors <- function(tlow, tup, tlim, tambStd=5, tlimStd=5) {
                                         "factor_err"   = 0,
                                         "typeDD"       = typeDD)
                     }
-                    else {
+		    else if (norm) {
 
-                      # integration boundaries
-                      x1 <- .tlim - 4*tlimStd
-                      x2 <- .tlim + 4*tlimStd
-                      y1 <- min(.tlim - 3*tlimStd, tamb - 3*tlimStd)
-                      y2 <- max(.tlim + 3*tlimStd, tamb + 3*tlimStd)
+                        # integration boundaries
+                        x1 <- .tlim - 3*tlimStd
+                        x2 <- .tlim + 3*tlimStd
 
-                      if (typeDD == "HDD") {
-                        f <- integral2(heatingFactor,
-                                       xmin = x1,
-                                       xmax = x2,
-                                       ymin = y1,
-                                       ymax = function(x){x},
-                                       tamb = tamb,
-                                       tambStd = tambStd,
-                                       tlim = .tlim,
-                                       tlimStd = tlimStd,
-                                       reltol = 1e-1
-                        )
+                        if (typeDD == "HDD") {
+                          f <- pracma::integral2(heatingFactor,
+                                                 xmin = x1,
+                                                 xmax = x2,
+                                                 ymin = tamb - 3*tambStd,
+                                                 ymax = min(.tlim, tamb + 3*tambStd),
+                                                 tamb = tamb,
+                                                 tambStd = tambStd,
+                                                 tlim = .tlim,
+                                                 tlimStd = tlimStd,
+                                                 reltol = 1e-1
+                          )
+                        }
+                        else {
+                          f <- pracma::integral2(coolingFactor,
+                                                 xmin = x1,
+                                                 xmax = x2,
+                                                 ymin = max(.tlim, tamb - 3*tambStd),
+                                                 ymax = tamb + 3*tambStd,
+                                                 tamb = tamb,
+                                                 tambStd = tambStd,
+                                                 tlim = .tlim,
+                                                 tlimStd = tlimStd,
+                                                 reltol = 1e-1)
+                        }
+                        tmp <- data.frame("T_amb"        = tamb,
+                                          "T_amb_K"      = round(tamb + 273.15, 1),
+                                          "T_lim"        = .tlim,
+                                          "factor"       = f$Q,
+                                          "factor_err"   = f$error,
+                                          "typeDD"       = typeDD)
                       }
                       else {
-                        f <- integral2(coolingFactor,
-                                       xmin = x1,
-                                       xmax = x2,
-                                       ymin = function(x){x},
-                                       ymax = y2,
-                                       tamb = tamb,
-                                       tambStd = tambStd,
-                                       tlim = .tlim,
-                                       tlimStd = tlimStd,
-                                       reltol = 1e-1)
+                        if (typeDD == "HDD") {
+                          degDays <- .tlim - tamb
+                          degDays[degDays < 0] <- 0
+
+                          tmp <- data.frame("T_amb"        = tamb,
+                                            "T_amb_K"      = round(tamb + 273.15, 1),
+                                            "T_lim"        = .tlim,
+                                            "factor"       = degDays,
+                                            "factor_err"   = 0,
+                                            "typeDD"       = typeDD)
+                        } else {
+                          degDays <- tamb - .tlim
+                          degDays[degDays < 0] <- 0
+
+                          tmp <- data.frame("T_amb"        = tamb,
+                                            "T_amb_K"      = round(tamb + 273.15, 1),
+                                            "T_lim"        = .tlim,
+                                            "factor"       = degDays,
+                                            "factor_err"   = 0,
+                                            "typeDD"       = typeDD)
+                        }
                       }
-                      tmp <- data.frame("T_amb"        = tamb,
-                                        "T_amb_K"      = round(tamb + 273.15, 1),
-                                        "T_lim"        = .tlim,
-                                        "factor"       = f$Q,
-                                        "factor_err"   = f$error,
-                                        "typeDD"       = typeDD)
-                    }
+                    return(tmp)			
                   }
                 )
               )
@@ -673,8 +699,10 @@ calcCellHDDCDD <- function(temp, typeDD, tlim, factors) {
   dates <- as.Date(names(temp))
 
   # add tolerance of 0.04K to avoid machine precision errors
+  factors <- factors[factors$typeDD == typeDD, ]
+
   factors <- factors %>%
-    filter(.data[["typeDD"]] == typeDD, .data[["T_lim"]] == tlim) %>%
+    filter(.data[["T_lim"]] == tlim) %>%
     dplyr::reframe(from = .data[["T_amb_K"]] - 0.049,
                    to = .data[["T_amb_K"]] + 0.049,
                    becomes = .data[["factor"]]) %>%
