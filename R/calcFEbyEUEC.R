@@ -181,7 +181,7 @@ calcFEbyEUEC <- function() {
 
   dataOutput <- list(
     x = dataFull,
-    weight = NA,
+    weight = NULL,
     unit = "EJ",
     description = "Historic Final Energy Data from IEA"
   )

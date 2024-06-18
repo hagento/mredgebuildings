@@ -9,6 +9,11 @@
 
 convertWEO <- function(x) {
 
+  # PARAMETER-------------------------------------------------------------------
+
+  # small correction factor for 0 entries
+  eps <- 1e-5
+
   # READ DATA-------------------------------------------------------------------
 
   data <- as.quitte(x)
@@ -48,6 +53,9 @@ convertWEO <- function(x) {
     mutate(value = ifelse(.data[["region"]] == "Southeast Asia" &
                             .data[["variable"]] %in% c("appliances", "lighting", "space_cooling"),
                           .data[["value"]] * 0.66,
+                          .data[["value"]])) %>%
+    mutate(value = ifelse(.data[["value"]] == 0,
+                          eps,
                           .data[["value"]]))
 
 
@@ -70,6 +78,12 @@ convertWEO <- function(x) {
 
   data <- dataDisagg %>%
     select("region", "period", "enduse", "value")
+
+  # calculate regional shares
+  data <- data %>%
+    group_by(across(all_of(c("region", "period")))) %>%
+    mutate(value = proportions(.data[["value"]])) %>%
+    ungroup()
 
 
   # OUTPUT----------------------------------------------------------------------
