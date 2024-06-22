@@ -21,8 +21,7 @@
 #' @export
 
 
-calcEfficiencyRegression <- function() {
-
+calcEfficiencyRegression <- function(gasBioEquality = TRUE) {
   # FUNCTIONS ------------------------------------------------------------------
 
   # Extrapolate historic FE-UE Efficiencies from Fit Function
@@ -62,16 +61,17 @@ calcEfficiencyRegression <- function() {
   pop <- calcOutput("PopulationPast", aggregate = FALSE) %>%
     as.quitte()
 
-  # regression parameter corrections
-  parsCorr <- toolGetMapping(name  = "correct_efficiencies.csv",
-                             type  = "sectoral",
-                             where = "mredgebuildings")
 
 
   # PARAMETERS -----------------------------------------------------------------
 
   # Minimum Requirement to be considered
   minEfficiency <- 0.05
+
+  # Equal efficiencies
+  eqEffs <- c("water_heating.natgas" = "water_heating.biomod",
+              "space_heating.natgas" = "space_heating.biomod",
+              "cooking.natgas" = "cooking.biomod")
 
 
   # PROCESS DATA ---------------------------------------------------------------
@@ -135,25 +135,24 @@ calcEfficiencyRegression <- function() {
       rbind(parsFull)
   }
 
-  parsFull <- parsFull %>%
-    separate("variable", c("enduse", "carrier"), sep = "\\.")
 
+  #--- Corrections
 
+  # Biomod Efficiency identical to Natgas
+  if (gasBioEquality) {
+    gasEffs <- parsFull %>%
+      filter(.data[["variable"]] %in% names(eqEffs))
 
-  # CORRECTIONS ----------------------------------------------------------------
+    for (gasVar in names(eqEffs)) {
+      bioEffs <- gasEffs %>%
+        filter(.data[["variable"]] == gasVar) %>%
+        mutate(variable = eqEffs[gasVar][[1]])
 
-  # Rename corrected parameters
-  parsCorr <- parsCorr %>%
-    rename(AsymCorr = "Asym", lrcCorr = "lrc", R0Corr = "R0")
-
-
-  # Correct Regression Parameters for electrical Heat Transfer Technologies
-  parsFull <- parsFull %>%
-    left_join(parsCorr, by = c("carrier", "enduse")) %>%
-    mutate(Asym = ifelse(is.na(.data[["AsymCorr"]]), .data[["Asym"]], .data[["AsymCorr"]]),
-           R0 = ifelse(is.na(.data[["R0Corr"]]), .data[["R0"]], .data[["R0Corr"]]),
-           lrc = ifelse(is.na(.data[["lrcCorr"]]), .data[["lrc"]], .data[["lrcCorr"]])) %>%
-    select(-"AsymCorr", -"R0Corr", -"lrcCorr")
+      parsFull <- parsFull %>%
+        filter(variable != eqEffs[gasVar][[1]]) %>%
+        rbind(bioEffs)
+    }
+  }
 
 
 
@@ -161,6 +160,7 @@ calcEfficiencyRegression <- function() {
 
   # Trim Dataframe
   parsFull <- parsFull %>%
+    separate("variable", c("enduse", "carrier"), sep = "\\.") %>%
     mutate(region = "GLO") %>%
     select("region", "carrier", "enduse", "Asym", "R0", "lrc")
 
@@ -169,7 +169,7 @@ calcEfficiencyRegression <- function() {
     x = as.magpie(parsFull),
     weight = NULL,
     description = "Regression Parameter for FE-UE-Efficiency Projection",
-    unit = "a.u."
+    unit = ""
   ))
 
 }
