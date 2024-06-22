@@ -692,7 +692,7 @@ calcHDDCDDFactors <- function(tlow, tup, tlim, tambStd=5, tlimStd=5, norm) {
                         }
                         tmp <- data.frame("T_amb"        = tamb,
                                           "T_amb_K"      = round(tamb + 273.15, 1),
-                                          "T_lim"        = .tlim,
+                                          "tLim"        = .tlim,
                                           "factor"       = f$Q,
                                           "factor_err"   = f$error,
                                           "typeDD"       = typeDD)
@@ -704,7 +704,7 @@ calcHDDCDDFactors <- function(tlow, tup, tlim, tambStd=5, tlimStd=5, norm) {
 
                           tmp <- data.frame("T_amb"        = tamb,
                                             "T_amb_K"      = round(tamb + 273.15, 1),
-                                            "T_lim"        = .tlim,
+                                            "tLim"        = .tlim,
                                             "factor"       = degDays,
                                             "factor_err"   = 0,
                                             "typeDD"       = typeDD)
@@ -714,7 +714,7 @@ calcHDDCDDFactors <- function(tlow, tup, tlim, tambStd=5, tlimStd=5, norm) {
 
                           tmp <- data.frame("T_amb"        = tamb,
                                             "T_amb_K"      = round(tamb + 273.15, 1),
-                                            "T_lim"        = .tlim,
+                                            "tLim"        = .tlim,
                                             "factor"       = degDays,
                                             "factor_err"   = 0,
                                             "typeDD"       = typeDD)

@@ -29,8 +29,12 @@ calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
   gdppop <- calcOutput("GDPPop", aggregate = FALSE) %>%
     as.quitte()
 
-  # parsCorr <- read.csv("correct_efficiencies.csv", sep = ";")
   parsCorr <- toolGetMapping("correct_efficiencies.csv", type = "sectoral")
+
+  # efficiency regrrssion parameters
+  regPars <- calcOutput("EfficiencyRegression",
+                        gasBioEquality = gasBioEquality,
+                        aggregate = FALSE)
 
 
   # PARAMETERS -----------------------------------------------------------------
@@ -56,7 +60,7 @@ calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
   #--- Calculate Efficiency Estimates
 
   # Regression Parameters for enduse.carrier Combinations
-  regPars <- calcOutput("EfficiencyRegression", aggregate = FALSE) %>%
+  regPars <- regPars %>%
     as.quitte() %>%
     spread(key = "variable", value = "value") %>%
     select(-"model", -"scenario", -"region", -"unit", -"period")
@@ -128,7 +132,8 @@ calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
 
   # Trim Dataframe
   efficiencies <- dataHist %>%
-    select(-"gdppop", -"efficiency", -"pred", -"factor")
+    select(-"gdppop", -"efficiency", -"pred", -"factor") %>%
+    unite(col = "variable", c("enduse", "carrier"), sep = ".")
 
 
   #--- Corrections
@@ -136,18 +141,21 @@ calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
   # Biomod Efficiency identical to Natgas
   if (gasBioEquality) {
     gasEffs <- efficiencies %>%
-      unite("variable", "enduse", "carrier", sep = ".") %>%
       filter(.data[["variable"]] %in% names(eqEffs))
 
     for (gasVar in names(eqEffs)) {
       bioEffs <- gasEffs %>%
         filter(.data[["variable"]] == gasVar) %>%
-        mutate(variable = eqEffs[gasVar][[1]]) %>%
-        separate("variable", into = c("enduse", "carrier"), sep = "\\.")
+        mutate(variable = eqEffs[gasVar][[1]])
 
-      efficiencies <- rbind(efficiencies, bioEffs)
+      efficiencies <- efficiencies %>%
+        filter(.data[["variable"]] != eqEffs[gasVar][[1]]) %>%
+        rbind(bioEffs)
     }
   }
+
+  efficiencies <- efficiencies %>%
+    separate(col = "variable", into = c("enduse", "carrier"), sep = "\\.")
 
 
   # OUTPUT ---------------------------------------------------------------------

@@ -21,7 +21,7 @@
 #' @export
 
 
-calcEfficiencyRegression <- function() {
+calcEfficiencyRegression <- function(gasBioEquality = TRUE) {
   # FUNCTIONS ------------------------------------------------------------------
 
   # Extrapolate historic FE-UE Efficiencies from Fit Function
@@ -68,6 +68,10 @@ calcEfficiencyRegression <- function() {
   # Minimum Requirement to be considered
   minEfficiency <- 0.05
 
+  # Equal efficiencies
+  eqEffs <- c("water_heating.natgas" = "water_heating.biomod",
+              "space_heating.natgas" = "space_heating.biomod",
+              "cooking.natgas" = "cooking.biomod")
 
 
   # PROCESS DATA ---------------------------------------------------------------
@@ -129,6 +133,25 @@ calcEfficiencyRegression <- function() {
     parsFull <- as.data.frame(do.call(cbind, as.list(pars))) %>%
       mutate(variable = var) %>%
       rbind(parsFull)
+  }
+
+
+  #--- Corrections
+
+  # Biomod Efficiency identical to Natgas
+  if (gasBioEquality) {
+    gasEffs <- parsFull %>%
+      filter(.data[["variable"]] %in% names(eqEffs))
+
+    for (gasVar in names(eqEffs)) {
+      bioEffs <- gasEffs %>%
+        filter(.data[["variable"]] == gasVar) %>%
+        mutate(variable = eqEffs[gasVar][[1]])
+
+      parsFull <- parsFull %>%
+        filter(variable != eqEffs[gasVar][[1]]) %>%
+        rbind(bioEffs)
+    }
   }
 
 
