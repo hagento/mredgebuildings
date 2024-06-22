@@ -21,20 +21,44 @@
 
 
 calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
+  # FUNCTIONS ------------------------------------------------------------------
+
+  # Aggregate to Enduse-Level
+  sumDF <- function(df, variables, newname) {
+    enduseSum <- df %>%
+      filter(.data[["enduse"]] %in% variables) %>%
+      group_by(across(-any_of(c("value", "enduse")))) %>%
+      summarise(value = sum(.data[["value"]], na.rm = TRUE), .groups = "drop") %>%
+      mutate(enduse = newname) %>%
+      ungroup() %>%
+      select(all_of(colnames(df)))
+    df %>%
+      filter(!(.data[["enduse"]] %in% variables)) %>%
+      rbind(enduseSum)
+  }
+
+
   # READ-IN DATA ---------------------------------------------------------------
 
+  # FE/UE data
   pfu <- calcOutput("PFUDB", aggregate = FALSE) %>%
     as.quitte()
 
+  # GDP per capita
   gdppop <- calcOutput("GDPPop", aggregate = FALSE) %>%
     as.quitte()
 
-  parsCorr <- toolGetMapping("correct_efficiencies.csv", type = "sectoral")
-
-  # efficiency regrrssion parameters
+  # efficiency regression parameters
   regPars <- calcOutput("EfficiencyRegression",
                         gasBioEquality = gasBioEquality,
                         aggregate = FALSE)
+
+  # FE weights
+  feWeights <- calcOutput("FEbyEUEC", aggregate = FALSE) %>%
+    as.quitte()
+
+  # efficiency corrections
+  parsCorr <- toolGetMapping("correct_efficiencies.csv", type = "sectoral")
 
 
   # PARAMETERS -----------------------------------------------------------------
@@ -158,17 +182,24 @@ calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
     separate(col = "variable", into = c("enduse", "carrier"), sep = "\\.")
 
 
+  #--- Weights
+  feWeights <- feWeights %>%
+    filter(.data[["unit"]] == "fe") %>%
+    select("region", "period", "enduse", "carrier", "value") %>%
+    mutate(value = ifelse(.data[["value"]] == 0, 1e-6, .data[["value"]])) %>%
+    sumDF(c("appliances", "lighting"), "appliances_light") %>%
+    semi_join(efficiencies, by = c("region", "carrier", "enduse", "period")) %>%
+    as.magpie()
+
+
   # OUTPUT ---------------------------------------------------------------------
 
-  # Weights = FE?
-
   efficiencies <- efficiencies %>%
-    as.quitte() %>%
     as.magpie()
 
   return(list(
     x = efficiencies,
-    weights = NULL,
+    weights = feWeights,
     unit = "",
     min = 0,
     description = "Historical Conversion Efficiencies from FE to UE"

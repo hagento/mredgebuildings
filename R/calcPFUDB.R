@@ -210,7 +210,9 @@ calcPFUDB <- function() {
 
   # Extract regions with existing disaggregated FE shares
   replaceRegs <- sharesReplace %>%
-    filter(!is.na(.data[["value"]])) %>%
+    group_by(across(all_of(c("region", "carrier", "enduse")))) %>%
+    filter(all(!is.na(.data[["value"]]))) %>%
+    ungroup() %>%
     pull("region") %>%
     unique()
 
@@ -266,7 +268,6 @@ calcPFUDB <- function() {
   # Disaggregate Low-T Heat into different enduses
   pfuThermFE <- pfu %>%
     filter(.data[["enduse"]] == "Low-T heat",
-           !(.data[["region"]] %in% replaceRegs),
            unit == "fe") %>%
     select(-"enduse") %>%
     toolDisaggregate(enduseShares  = sharesEU,
@@ -274,7 +275,8 @@ calcPFUDB <- function() {
                      exclude       = exclude,
                      dataDisagg    = feDisagg,
                      regionMapping = regmapping) %>%
-    select(colnames(pfuNonTherm))
+    select(colnames(pfuNonTherm)) %>%
+    filter(!(.data[["region"]] %in% replaceRegs))
 
   # Use carrier-enduse distribution to apply on useful energy
   shares <- pfuThermFE %>%

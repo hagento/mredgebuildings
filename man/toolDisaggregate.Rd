@@ -7,6 +7,7 @@
 toolDisaggregate(
   data,
   enduseShares,
+  outliers = NULL,
   exclude = NULL,
   dataDisagg = NULL,
   regionMapping = NULL
@@ -19,6 +20,9 @@ that is to be disaggregated}
 \item{enduseShares}{data.frame with end use shares that have to be met. These
 shares might be given at aggregated regional resolution if
 \code{regionmapping} is provided.}
+
+\item{outliers}{list of regions where naive disaggregation estimate shall
+be used.}
 
 \item{exclude}{data.frame with the columns \code{carrier} and
 \code{enduse} that should list all  combinations of the two that are

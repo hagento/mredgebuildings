@@ -32,5 +32,5 @@ fullEDGEBUILDINGS <- function(rev = 0) {
   calcOutput("FloorspacePast",                                     file = "f_floorspace.cs4r")
   calcOutput("FEUE",                                               file = "f_feue.cs4r")
   calcOutput("FEUEefficiencies",                                   file = "f_feue_efficiencies.cs4r")
-  # calcOutput("EfficiencyRegression", aggregate = FALSE,            file = "f_feue_efficiencyPars.cs4r")
+  # calcOutput("EfficiencyRegression",                               file = "f_feue_efficiencyPars.cs4r")
 }

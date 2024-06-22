@@ -4,7 +4,7 @@
 \alias{calcEfficiencyRegression}
 \title{Calculation Regression Parameters for FE-UE Efficiency Projection}
 \usage{
-calcEfficiencyRegression()
+calcEfficiencyRegression(gasBioEquality = TRUE)
 }
 \description{
 Calculate the regression parameters for the projection of final (FE)

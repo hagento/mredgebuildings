@@ -40,7 +40,7 @@
 #'
 #' @importFrom rlang .data
 #' @importFrom dplyr mutate as_tibble filter select rename group_by across
-#'   all_of ungroup %>% .data left_join summarise group_modify cross_join
+#'   all_of ungroup %>% .data left_join summarise group_modify cross_join reframe
 #' @importFrom tidyr replace_na unite complete
 #' @importFrom madrat toolGetMapping calcOutput readSource toolCountryFill
 #' @importFrom magclass time_interpolate as.magpie
