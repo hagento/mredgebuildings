@@ -23,8 +23,8 @@
 
 toolSplitBiomass <- function(df,
                              dfGDPpop,
-                             min = 10E+3,
-                             max = 15E+3,
+                             min = 5E+3,
+                             max = 20E+3,
                              varName = "biomass") {
 
   # FUNCTIONS ------------------------------------------------------------------

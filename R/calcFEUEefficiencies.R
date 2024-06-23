@@ -101,6 +101,11 @@ calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
     select(-"phi3") %>%
     rename(AsymCorr = "Asym", lrcCorr = "lrc", R0Corr = "R0")
 
+  # enduse.carrier pairs to correct
+  varsCorr <- parsCorr %>%
+    select("enduse", "carrier") %>%
+    unite(col = "variable", c("enduse", "carrier"), sep = ".") %>%
+    pull("variable")
 
 
   # Correct Regression Parameters for electrical Heat Transfer Technologies
@@ -142,6 +147,7 @@ calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
   #       will be filled-up w/ non-corrected efficiency projections.
   dataHist <- dataHist %>%
     left_join(corrFactors, by = c("region", "period", "enduse", "carrier")) %>%
+    unite(col = "variable", c("enduse", "carrier"), sep = ".") %>%
     mutate(value = ifelse(is.na(.data[["factor"]]),
                           .data[["pred"]],
                           ifelse(is.infinite(.data[["factor"]]),
@@ -150,14 +156,16 @@ calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
                                         .data[["pred"]] * .data[["factor"]],
                                         .data[["efficiency"]])
                                  )
-                          )
+                          ),
+           value = ifelse(.data[["variable"]] %in% varsCorr,
+                          .data[["pred"]],
+                          .data[["value"]])
            )
 
 
   # Trim Dataframe
   efficiencies <- dataHist %>%
-    select(-"gdppop", -"efficiency", -"pred", -"factor") %>%
-    unite(col = "variable", c("enduse", "carrier"), sep = ".")
+    select(-"gdppop", -"efficiency", -"pred", -"factor")
 
 
   #--- Corrections
