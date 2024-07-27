@@ -3,6 +3,18 @@
 #' Takes the historic final energy demand by carriers from IEA and disaggregates
 #' it into different end uses.
 #'
+#' The disaggregation is performed such that the aggregated carrier-specific FE
+#' values of the IEA IO regions are met as a minimum requirement. In an ideal case,
+#' the enduse-specific FE shares are met as well.
+#'
+#' @note
+#' For now, existing disaggregated final energy data with respect to carriers and
+#' enduses combined is replaced in the final output. However, since the Odyssee
+#' data is largely underestimating the real IEA FE targets, these shall serve as
+#' lower boundaries for the disaggregation.
+#' Such feature has been implemented in \code{toolDisaggregate} but is not running
+#' smoothly yet.
+#'
 #' @returns data.frame with historic energy demands
 #'
 #' @author Hagen Tockhorn, Robin Hasse
@@ -29,7 +41,7 @@ calcFEbyEUEC <- function() {
                           subtype = "enduse_carrier",
                           feOnly = TRUE,
                           aggregate = FALSE) %>%
-  as.quitte()
+    as.quitte()
 
 
   # FE IEA EEI data
@@ -62,12 +74,6 @@ calcFEbyEUEC <- function() {
                             type  = "sectoral",
                             where = "mredgebuildings")
 
-  # European countries
-  eurCountries <- c("FIN", "AUT", "BEL", "BGR", "CYP", "CZE", "DEU", "DNK", "ESP",
-                    "EST", "FRA", "GBR", "GRC", "HRV", "HUN", "IRL", "ITA", "LTU",
-                    "LUX", "LVA", "MLT", "NLD", "POL", "PRT", "ROU", "SVK", "SVN",
-                    "SWE")
-
 
   # PROCESS DATA ---------------------------------------------------------------
 
@@ -77,6 +83,12 @@ calcFEbyEUEC <- function() {
   ieaIO <- ieaIO %>%
     rename(carrier = "variable") %>%
     semi_join(sharesEU, by = c("period"))
+
+
+  # remove district space cooling from disaggregation
+  exclude <- exclude %>%
+    mutate(enduse = "space_cooling",
+           carrier = "heat")
 
 
   #--- Prepare toolDisaggregate Input
@@ -118,12 +130,6 @@ calcFEbyEUEC <- function() {
            replaceValue = replace_na(.data[["replaceValue"]], 0)) %>%
     select("region", "period", "carrier", "enduse", "replaceValue")
 
-  # Identify full data sets region-carrier-enduse combinations
-  dataReplaceFill <- feDisagg %>%
-    group_by(across(all_of(c("region", "carrier", "enduse")))) %>%
-    reframe(replaceValue = .data[["value"]],
-            period = .data[["period"]])
-
 
   # existing disaggregated data replaces values from optimization
   data <- ieaIODis %>%
@@ -134,17 +140,16 @@ calcFEbyEUEC <- function() {
     select("region", "period", "unit", "carrier", "enduse", "value")
 
 
-
   # CORRECTIONS ----------------------------------------------------------------
 
   # For unknown reasons, the enduse share of "space_cooling" for region "Africa"
   # is not met and will therefore be corrected. Since "space_cooling" only corresponds
   # to the carrier "elec", the correction is straight-forward.
-  # TODO: check if this can be fixed
+  # TODO: check if this can be fixed #nolint
 
   elecSpaceCoolingShare <- sharesEU %>%
-    filter(region == "Africa",
-           enduse == "space_cooling") %>%
+    filter(.data[["region"]] == "Africa",
+           .data[["enduse"]] == "space_cooling") %>%
     select("period", "value") %>%
     rename("share" = "value")
 
@@ -157,7 +162,7 @@ calcFEbyEUEC <- function() {
     mutate(value = ifelse(.data[["enduse"]] == "space_cooling",
                           ifelse(!(.data[["carrier"]] == "elec"),
                                  .data[["value"]],
-                                 sum(.data[["value"]], na.rm = T) * .data[["share"]]),
+                                 sum(.data[["value"]], na.rm = TRUE) * .data[["share"]]),
                           .data[["value"]] * (1 - .data[["share"]]))) %>%
     ungroup() %>%
     select(-"share")
@@ -169,8 +174,24 @@ calcFEbyEUEC <- function() {
                       select(-"regionAgg"))
 
 
+  # Since the data on district cooling is very sparse and the low global penetration
+  # of the technology, we assume that all historic cooling demand is covered by
+  # electricity but assume that district cooling might play a more significant role
+  # in the future.
 
-  # RETURN DATA ----------------------------------------------------------------
+  dataCorr <- dataFull %>%
+    select(-"enduse", -"carrier", -"value") %>%
+    unique() %>%
+    mutate(enduse = "space_cooling",
+           carrier = "heat",
+           value = 0)
+
+  dataFull <- rbind(dataCorr, dataFull)
+
+
+
+
+  # OUTPUT ---------------------------------------------------------------------
 
   # Pack Data
   dataFull <- dataFull %>%
@@ -179,13 +200,9 @@ calcFEbyEUEC <- function() {
     as.magpie() %>%
     toolCountryFill(1, verbosity = 2)
 
-  dataOutput <- list(
-    x = dataFull,
-    weight = NULL,
-    unit = "EJ",
-    description = "Historic Final Energy Data from IEA"
-  )
 
-  return(dataOutput)
-
+  return(list(x = dataFull,
+              weight = NULL,
+              unit = "EJ",
+              description = "Historic Final Energy Data from IEA"))
 }
