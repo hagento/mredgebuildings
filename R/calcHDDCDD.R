@@ -148,7 +148,10 @@ calcHDDCDD <- function(mappingFile,
                 "population_ssp4_30arcmin_annual_2015_2100.nc",
                 "population_ssp5_30arcmin_annual_2015_2100.nc")
 
+  popFiles <- c("population_ssp2_30arcmin_annual_2015_2100.nc")
 
+  cacheDir <- "/p/projects/rd3mod/inputdata/sources/BAITpars"
+  rasDir   <- "/p/tmp/hagento/output/rasterdata"
 
   # READ-IN DATA----------------------------------------------------------------
 
@@ -159,7 +162,8 @@ calcHDDCDD <- function(mappingFile,
     filter(.data[["variable"]] != "")
 
   # cells -> country mask
-  fCM <- file.path(files[files$variable == "CountryMask", "file"])
+  #fCM <- file.path(files[files$variable == "CountryMask", "file"])
+  fCM <- "countrymasks-fractional_30arcmin.nc"
   countries <- readSource("ISIMIPbuildings", subtype = fCM, convert = FALSE)
 
   # population
@@ -222,7 +226,8 @@ calcHDDCDD <- function(mappingFile,
               ssp <- strsplit(fpop, "_")[[1]][[2]] %>%
                 toupper()
 
-              split <- files[files$variable == "tas" & files$gcm == model, ][[n, "split"]]
+              # split <- files[files$variable == "tas" & files$gcm == model, ][[n, "split"]]
+              split <- FALSE
 
               # split large raster files to save memory / speed up processing
               if (as.logical(split)) {
@@ -895,16 +900,16 @@ compStackHDDCDD <- function(ftas, tlim, countries, pop, factors, bait,
               hddcddAgg <- compCellHDDCDD(temp, typeDD, t, factors)
 
               # write raster files
-              if (!is.null(rasDir)) {
-                y <- names(hddcddAgg)
+              # if (!is.null(rasDir)) {
+              #   y <- names(hddcddAgg)
 
-                rname <- paste0(fSplit[[1]], "_", y, "_", fSplit[[4]], "_", typeDD, "_", t)
-                rname <- paste0(rname, if (bait) "_bait" else "", ".nc")
+              #   rname <- paste0(fSplit[[1]], "_", y, "_", fSplit[[4]], "_", typeDD, "_", t)
+              #   rname <- paste0(rname, if (bait) "_bait" else "", ".nc")
 
-                writeCDF(hddcddAgg,
-                         file.path(rasDir, fSplit[[1]], rname),
-                         overwrite = TRUE)
-              }
+              #   writeCDF(hddcddAgg,
+              #            file.path(rasDir, fSplit[[1]], rname),
+              #            overwrite = TRUE)
+              # }
 
               hddcddAgg <- hddcddAgg %>%
                 aggCells(pop, countries) %>%
