@@ -1,5 +1,6 @@
 #' Convert TCEP data base
 #'
+#' @param subtype character, type of data
 #' @param x MAgPIE object with data from TCEP #nolint
 #'
 #' @returns magpie object
@@ -14,8 +15,11 @@
 #' @importFrom madrat toolGetMapping calcOutput
 #' @export
 
-convertTCEP <- function(x) {
+convertTCEP <- function(x, subtype = "enduse") {
 
+  if (subtype != "enduse") {
+    stop("No conversion for this subtype: ", subtype)
+  }
 
   # READ-IN DATA ---------------------------------------------------------------
 
@@ -23,30 +27,23 @@ convertTCEP <- function(x) {
 
 
   # Enduse Mapping
-  # AL didn't map Middle East & Africa. Instead he mapped IND & other dev. Asia
-  # to both MIE and AFR.
-  # RH: I now map Middle East & Africa to MIE and AFR
-  # TODO: check this mapping
-  tcepMap <- toolGetMapping("regionmappingTCEP2.csv",
-                           type = "regional",
-                           where = "mredgebuildings")
+  tcepMap <- toolGetMapping("regionmappingTCEP.csv",
+                            type = "regional",
+                            where = "mredgebuildings")
 
   # Population
-  # TODO: check if FE demand in buildings should be used as weights
+  # TODO: check if FE demand in buildings should be used as weights #nolint‚
   pop <- calcOutput("PopulationPast", aggregate = FALSE) %>%
     as.quitte()
 
 
   # PARAMETERS -----------------------------------------------------------------
 
-  enduseMapping <- c(
-    "Space heating"         = "space_heating",
-    "Space cooling"         = "space_cooling",
-    "Water heating"         = "water_heating",
-    "Lighting"              = "lighting",
-    "Cooking"               = "cooking",
-    "Appliances and other"  = "appliances"
-  )
+  # enduse mapping
+  enduseMap <- toolGetMapping(name = "enduseMap_TCEP.csv",
+                              type = "sectoral",
+                              where = "mredgebuildings") %>%
+    pull("EDGE", "TCEP")
 
 
   # PROCESS DATA ---------------------------------------------------------------
@@ -55,7 +52,7 @@ convertTCEP <- function(x) {
   data <- data %>%
     as.quitte() %>%
     select("region", "period", "variable", "unit", "value") %>%
-    revalue.levels(variable = enduseMapping)
+    revalue.levels(variable = enduseMap)
 
   # correct FE enduse data for "appliances" in India
   data <- data %>%

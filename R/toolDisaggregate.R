@@ -23,7 +23,7 @@
 #' @param dataDisagg data.frame similar to \code{data} but already disaggregated
 #'   by carriers and end uses. The average distribution of its disaggregation
 #'   will be used as the target distribution for the minisation.
-#' @param regionmapping data.frame with the columns \code{region} and
+#' @param regionMapping data.frame with the columns \code{region} and
 #'   \code{regionAgg} that maps the regions between \code{data} and
 #'   \code{enduseShares}.
 #' @param outliers list of regions where naive disaggregation estimate shall
@@ -238,7 +238,7 @@ toolDisaggregate <- function(data,
 
 
 
-#' Disaggregate energy demand within on aggregated region
+#' Disaggregate energy demand within an aggregated region
 #'
 #' Disaggregate regional energy demand per carrier by end use while meeting the
 #' end use shares in the aggregated region.
@@ -317,18 +317,18 @@ toolDisaggregate <- function(data,
   # first look for exact solution
   # If there is none, find one that matches end use quantities closely
   for (precision in c("exact", "close")) {
-  # for (precision in c("close")) {
+  # for (precision in c("close")) { #nolint
 
     # BUILD MATRICES -----------------------------------------------------------
 
     if (precision == "exact") {
 
-      Dmat <- identityMatrix
+      dMat <- identityMatrix
 
       dvec <- variables %>%
         getElement("estimate")
 
-      Amat <- constraintMatrix %>%
+      aMat <- constraintMatrix %>%
         reduce(full_join, by = c("region", "carrier", "enduse")) %>%
         select(-"region", -"carrier", -"enduse") %>%
         as.matrix()
@@ -346,7 +346,7 @@ toolDisaggregate <- function(data,
         as.matrix()
       objectiveMatrix <- rbind(identityMatrix, weight * t(enduseMatrix))
 
-      Dmat <- t(objectiveMatrix) %*% objectiveMatrix
+      dMat <- t(objectiveMatrix) %*% objectiveMatrix
 
       objectiveRHS <- constraintRHS[["enduse"]] %>%
         getElement("value")
@@ -356,7 +356,7 @@ toolDisaggregate <- function(data,
 
       dvec <- t(objectiveMatrix) %*% objectiveRHS
 
-      Amat <- constraintMatrix[c("carrier", "zero")] %>%
+      aMat <- constraintMatrix[c("carrier", "zero")] %>%
         reduce(full_join, by = c("region", "carrier", "enduse")) %>%
         select(-"region", -"carrier", -"enduse") %>%
         as.matrix()
@@ -382,7 +382,7 @@ toolDisaggregate <- function(data,
     #   deviations from estimate)
     #   subject to matching regional carrier totals with non-negative
     #   disaggregated quantities
-    r <- tryCatch(solve.QP(Dmat, dvec, Amat, bvec,meq),
+    r <- tryCatch(solve.QP(dMat, dvec, aMat, bvec, meq),
                   error = function(e) NULL)
 
     # no need to lower the ambition if a solution is found

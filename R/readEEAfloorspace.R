@@ -13,8 +13,7 @@
 #'
 #' @importFrom utils read.csv
 #' @importFrom tidyr gather
-#' @importFrom dplyr %>% select mutate
-#' @importFrom rlang .data
+#' @importFrom dplyr %>% select mutate .data
 #' @importFrom quitte as.quitte
 #' @importFrom magclass as.magpie collapseDim
 #' @export

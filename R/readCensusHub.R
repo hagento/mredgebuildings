@@ -25,8 +25,7 @@
 readCensusHub <- function(subtype) {
 
   # pick file
-  files <- list(
-    typeVintage = "csvoutput_HC53_2022_04_08_17_01.csv")
+  files <- list(typeVintage = "csvoutput_HC53_2022_04_08_17_01.csv")
 
   data <- toolSubtypeSelect(subtype, files) %>%
     read.csv() %>%

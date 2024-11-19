@@ -17,6 +17,7 @@
 #' @author Hagen Tockhorn
 #'
 #' @importFrom tidyr one_of
+#' @importFrom quitte factor.data.frame
 #'
 #' @export
 
@@ -65,20 +66,19 @@ toolSplitBiomass <- function(df,
                             NA,
                             .data[["biomass"]] * (1 - shareTrad)),
            biotrad2 = ifelse(is.na(.data[["biomass"]]),
-                            NA,
-                            .data[["biomass"]] * shareTrad))
+                             NA,
+                             .data[["biomass"]] * shareTrad))
 
 
   # Check for already existing Entries and add them up if existing
   bioCols <- grep(bioComponents, colnames(tmp), value = TRUE)
-  # tmp[bioCols][is.na(tmp[bioCols])] <- 0
 
   biomodNames <- grep("^biomod.$", bioCols, value = TRUE)
   biotradNames <- grep("^biotrad.$", bioCols, value = TRUE)
   if (length(biomodNames) > 1) {
     tmp$biomod <- rowSums(tmp[, biomodNames], na.rm = TRUE)
-} else {
- tmp$biomod <- tmp[[biomodNames]]
+  } else {
+    tmp$biomod <- tmp[[biomodNames]]
   }
 
   if (length(biotradNames) > 1) {
@@ -94,7 +94,7 @@ toolSplitBiomass <- function(df,
     select(-matches(bioComponents)) %>%
     select(-"gdppop", -"shareTrad", -"biomass") %>%
     gather(key = "variable", value = "value", -one_of(keepCol)) %>%
-    quitte::factor.data.frame()
+    factor.data.frame()
 
 
   return(tmp[colnames(df)])

@@ -1,0 +1,14 @@
+variable,considerSales,technologyBRICK,isComplete,comment
+Sales of efficient heaters|Biomass boilers,TRUE,biom,TRUE,
+Sales of efficient heaters|Heat pumps,FALSE,ehp1,TRUE,
+Sales of efficient heaters|Liquid fuel condensing boilers,TRUE,libo,FALSE,sales of non-condensing not reported
+Sales of efficient heaters|Gaseous fuel condensing boilers,TRUE,gabo,FALSE,sales of non-condensing not reported
+Sales of efficient heaters|Hybrid heat pumps,FALSE,ehp1,TRUE,
+Installed stock of heaters|Liquid fuel non-condensing boilers,FALSE,libo,TRUE,
+Installed stock of heaters|Gaseous fuel non-condensing boilers,FALSE,gabo,TRUE,
+Installed stock of heaters|Liquid fuel condensing boilers,FALSE,libo,TRUE,
+Installed stock of heaters|Gaseous fuel condensing boilers,FALSE,gabo,TRUE,
+Installed stock of heaters|Heat pumps,FALSE,ehp1,TRUE,
+Installed stock of heaters|Biomass boilers,FALSE,biom,TRUE,
+Installed stock of heaters|Others,FALSE,,TRUE,
+Installed stock of heaters|Coal boilers,FALSE,sobo,TRUE,

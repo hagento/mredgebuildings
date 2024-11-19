@@ -17,9 +17,8 @@
 #'
 #' @importFrom madrat toolSubtypeSelect
 #' @importFrom utils read.csv
-#' @importFrom dplyr %>% slice mutate filter matches
+#' @importFrom dplyr %>% slice mutate filter matches .data
 #' @importFrom tidyr unite gather
-#' @importFrom rlang .data
 #' @importFrom quitte as.quitte
 #' @importFrom magclass as.magpie mselect getNames dimSums getItems
 #' @export

@@ -1,0 +1,250 @@
+X;CountryCode;RegionCode
+Afghanistan;AFG;Southeastern Asia
+Aland Islands;ALA;Western Europe
+Albania;ALB;Western Europe
+Algeria;DZA;Global Average
+American Samoa;ASM;Southeastern Asia
+Andorra;AND;Western Europe
+Angola;AGO;Global Average
+Anguilla;AIA;Rest of South America
+Antarctica;ATA;Rest of South America
+Antigua and Barbuda;ATG;Rest of South America
+Argentina;ARG;Rest of South America
+Armenia;ARM;Global Average
+Aruba;ABW;Rest of South America
+Australia;AUS;Global Average
+Austria;AUT;Western Europe
+Azerbaijan;AZE;Global Average
+Bahamas;BHS;Rest of South America
+Bahrain;BHR;Global Average
+Bangladesh;BGD;Southeastern Asia
+Barbados;BRB;Rest of South America
+Belarus;BLR;Global Average
+Belgium;BEL;Western Europe
+Belize;BLZ;Rest of South America
+Benin;BEN;Global Average
+Bermuda;BMU;Rest of South America
+Bhutan;BTN;Southeastern Asia
+Bolivia, Plurinational State of;BOL;Rest of South America
+Bonaire, Sint Eustatius and Saba;BES;Rest of South America
+Bosnia and Herzegovina;BIH;Western Europe
+Botswana;BWA;Global Average
+Bouvet Island;BVT;Rest of South America
+Brazil;BRA;Brazil
+British Indian Ocean Territory;IOT;Southeastern Asia
+Brunei Darussalam;BRN;Southeastern Asia
+Bulgaria;BGR;Western Europe
+Burkina Faso;BFA;Global Average
+Burundi;BDI;Global Average
+Cambodia;KHM;Southeastern Asia
+Cameroon;CMR;Global Average
+Canada;CAN;Canada
+Cape Verde;CPV;Global Average
+Cayman Islands;CYM;Rest of South America
+Central African Republic;CAF;Global Average
+Chad;TCD;Global Average
+Chile;CHL;Rest of South America
+China;CHN;China
+Christmas Island;CXR;Southeastern Asia
+Cocos (Keeling) Islands;CCK;Southeastern Asia
+Colombia;COL;Rest of South America
+Comoros;COM;Global Average
+Congo;COG;Global Average
+Congo, the Democratic Republic of the;COD;Global Average
+Cook Islands;COK;Southeastern Asia
+Costa Rica;CRI;Rest of South America
+Cote d Ivoire;CIV;Global Average
+Croatia;HRV;Western Europe
+Cuba;CUB;Rest of South America
+Curacao;CUW;Rest of South America
+Cyprus;CYP;Western Europe
+Czech Republic;CZE;Western Europe
+Denmark;DNK;Western Europe
+Djibouti;DJI;Global Average
+Dominica;DMA;Rest of South America
+Dominican Republic;DOM;Rest of South America
+Ecuador;ECU;Rest of South America
+Egypt;EGY;Global Average
+El Salvador;SLV;Rest of South America
+Equatorial Guinea;GNQ;Global Average
+Eritrea;ERI;Global Average
+Estonia;EST;Western Europe
+Ethiopia;ETH;Global Average
+Falkland Islands (Malvinas);FLK;Rest of South America
+Faroe Islands;FRO;Western Europe
+Fiji;FJI;Southeastern Asia
+Finland;FIN;Western Europe
+France;FRA;Western Europe
+French Guiana;GUF;Rest of South America
+French Polynesia;PYF;Southeastern Asia
+French Southern Territories;ATF;Southeastern Asia
+Gabon;GAB;Global Average
+Gambia;GMB;Global Average
+Georgia;GEO;Global Average
+Germany;DEU;Western Europe
+Ghana;GHA;Global Average
+Gibraltar;GIB;Western Europe
+Greece;GRC;Western Europe
+Greenland;GRL;Western Europe
+Grenada;GRD;Rest of South America
+Guadeloupe;GLP;Rest of South America
+Guam;GUM;Southeastern Asia
+Guatemala;GTM;Rest of South America
+Guernsey;GGY;Western Europe
+Guinea;GIN;Global Average
+Guinea-Bissau;GNB;Global Average
+Guyana;GUY;Rest of South America
+Haiti;HTI;Rest of South America
+Heard Island and McDonald Islands;HMD;Global Average
+Holy See (Vatican City State);VAT;Western Europe
+Honduras;HND;Rest of South America
+Hong Kong;HKG;Global Average
+Hungary;HUN;Western Europe
+Iceland;ISL;Western Europe
+India;IND;Southeastern Asia
+Indonesia;IDN;Southeastern Asia
+Iran, Islamic Republic of;IRN;Global Average
+Iraq;IRQ;Global Average
+Ireland;IRL;Western Europe
+Isle of Man;IMN;Western Europe
+Israel;ISR;Global Average
+Italy;ITA;Western Europe
+Jamaica;JAM;Rest of South America
+Japan;JPN;Global Average
+Jersey;JEY;Western Europe
+Jordan;JOR;Global Average
+Kazakhstan;KAZ;Global Average
+Kenya;KEN;Global Average
+Kiribati;KIR;Southeastern Asia
+Korea, Democratic People's Republic of;PRK;Southeastern Asia
+Korea, Republic of;KOR;Southeastern Asia
+Kuwait;KWT;Global Average
+Kyrgyzstan;KGZ;Global Average
+Lao People's Democratic Republic;LAO;Southeastern Asia
+Latvia;LVA;Western Europe
+Lebanon;LBN;Global Average
+Lesotho;LSO;Global Average
+Liberia;LBR;Global Average
+Libya;LBY;Global Average
+Liechtenstein;LIE;Western Europe
+Lithuania;LTU;Western Europe
+Luxembourg;LUX;Western Europe
+Macao;MAC;Global Average
+Macedonia, the former Yugoslav Republic of;MKD;Western Europe
+Madagascar;MDG;Global Average
+Malawi;MWI;Global Average
+Malaysia;MYS;Southeastern Asia
+Maldives;MDV;Southeastern Asia
+Mali;MLI;Global Average
+Malta;MLT;Western Europe
+Marshall Islands;MHL;Southeastern Asia
+Martinique;MTQ;Rest of South America
+Mauritania;MRT;Global Average
+Mauritius;MUS;Global Average
+Mayotte;MYT;Global Average
+Mexico;MEX;Mexico
+Micronesia, Federated States of;FSM;Southeastern Asia
+Moldova, Republic of;MDA;Global Average
+Monaco;MCO;Western Europe
+Mongolia;MNG;Southeastern Asia
+Montenegro;MNE;Western Europe
+Montserrat;MSR;Rest of South America
+Morocco;MAR;Global Average
+Mozambique;MOZ;Global Average
+Myanmar;MMR;Southeastern Asia
+Namibia;NAM;Global Average
+Nauru;NRU;Southeastern Asia
+Nepal;NPL;Southeastern Asia
+Netherlands;NLD;Western Europe
+New Caledonia;NCL;Southeastern Asia
+New Zealand;NZL;Global Average
+Nicaragua;NIC;Rest of South America
+Niger;NER;Global Average
+Nigeria;NGA;Global Average
+Niue;NIU;Southeastern Asia
+Norfolk Island;NFK;Southeastern Asia
+Northern Mariana Islands;MNP;Southeastern Asia
+Norway;NOR;Western Europe
+Oman;OMN;Global Average
+Pakistan;PAK;Southeastern Asia
+Palau;PLW;Southeastern Asia
+Palestine, State of;PSE;Global Average
+Panama;PAN;Rest of South America
+Papua New Guinea;PNG;Southeastern Asia
+Paraguay;PRY;Rest of South America
+Peru;PER;Rest of South America
+Philippines;PHL;Southeastern Asia
+Pitcairn;PCN;Southeastern Asia
+Poland;POL;Western Europe
+Portugal;PRT;Western Europe
+Puerto Rico;PRI;Rest of South America
+Qatar;QAT;Global Average
+Reunion;REU;Global Average
+Romania;ROU;Western Europe
+Russian Federation;RUS;Global Average
+Rwanda;RWA;Global Average
+Saint Barthelemy;BLM;Rest of South America
+Saint Helena, Ascension and Tristan da Cunha;SHN;Global Average
+Saint Kitts and Nevis;KNA;Rest of South America
+Saint Lucia;LCA;Rest of South America
+Saint Martin (French part);MAF;Rest of South America
+Saint Pierre and Miquelon;SPM;Global Average
+Saint Vincent and the Grenadines;VCT;Rest of South America
+Samoa;WSM;Southeastern Asia
+San Marino;SMR;Western Europe
+Sao Tome and Principe;STP;Global Average
+Saudi Arabia;SAU;Global Average
+Senegal;SEN;Global Average
+Serbia;SRB;Western Europe
+Seychelles;SYC;Global Average
+Sierra Leone;SLE;Global Average
+Singapore;SGP;Southeastern Asia
+Sint Maarten (Dutch part);SXM;Rest of South America
+Slovakia;SVK;Western Europe
+Slovenia;SVN;Western Europe
+Solomon Islands;SLB;Southeastern Asia
+Somalia;SOM;Global Average
+South Africa;ZAF;Global Average
+South Georgia and the South Sandwich Islands;SGS;Rest of South America
+South Sudan;SSD;Global Average
+Spain;ESP;Western Europe
+Sri Lanka;LKA;Southeastern Asia
+Sudan;SDN;Global Average
+Suriname;SUR;Rest of South America
+Svalbard and Jan Mayen;SJM;Western Europe
+Swaziland;SWZ;Global Average
+Sweden;SWE;Western Europe
+Switzerland;CHE;Western Europe
+Syrian Arab Republic;SYR;Global Average
+Taiwan, Province of China;TWN;Global Average
+Tajikistan;TJK;Global Average
+Tanzania, United Republic of;TZA;Global Average
+Thailand;THA;Southeastern Asia
+Timor-Leste;TLS;Southeastern Asia
+Togo;TGO;Global Average
+Tokelau;TKL;Southeastern Asia
+Tonga;TON;Southeastern Asia
+Trinidad and Tobago;TTO;Rest of South America
+Tunisia;TUN;Global Average
+Turkey;TUR;Western Europe
+Turkmenistan;TKM;Global Average
+Turks and Caicos Islands;TCA;Rest of South America
+Tuvalu;TUV;Southeastern Asia
+Uganda;UGA;Global Average
+Ukraine;UKR;Global Average
+United Arab Emirates;ARE;Global Average
+United Kingdom;GBR;Western Europe
+United States;USA;United States
+United States Minor Outlying Islands;UMI;Southeastern Asia
+Uruguay;URY;Rest of South America
+Uzbekistan;UZB;Global Average
+Vanuatu;VUT;Southeastern Asia
+Venezuela, Bolivarian Republic of;VEN;Rest of South America
+Viet Nam;VNM;Southeastern Asia
+Virgin Islands, British;VGB;Rest of South America
+Virgin Islands, U.S.;VIR;Rest of South America
+Wallis and Futuna;WLF;Southeastern Asia
+Western Sahara;ESH;Global Average
+Yemen;YEM;Global Average
+Zambia;ZMB;Global Average
+Zimbabwe;ZWE;Global Average

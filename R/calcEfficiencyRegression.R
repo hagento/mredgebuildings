@@ -15,8 +15,12 @@
 #'
 #' @author Hagen Tockhorn
 #'
-#' @importFrom quitte aggregate_map
-#' @importFrom stats as.formula
+#' @importFrom quitte aggregate_map removeColNa as.quitte
+#' @importFrom stats as.formula na.omit nls
+#' @importFrom dplyr mutate select filter left_join group_by across all_of rename
+#' @importFrom tidyr spread unite
+#' @importFrom madrat calcOutput toolGetMapping
+#' @importFrom magclass as.magpie
 #'
 #' @export
 
@@ -55,7 +59,7 @@ calcEfficiencyRegression <- function(gasBioEquality = TRUE) {
     as.quitte()
 
   # Get Mapping (ISO<->PFU)
-  regionmapping <- toolGetMapping("pfu_regionmapping.csv", type = "regional")
+  regionmapping <- toolGetMapping("pfu_regionmapping.csv", type = "regional", where = "mredgebuildings")
 
   # Get Population Data
   pop <- calcOutput("PopulationPast", aggregate = FALSE) %>%
@@ -80,24 +84,22 @@ calcEfficiencyRegression <- function(gasBioEquality = TRUE) {
 
   # Aggregate PFU Data to PFU Country Code
   data <- pfu %>%
-    mutate(value = ifelse(is.na(.data[["value"]]), 0, .data[["value"]])) %>%
+    mutate(value = replace_na(.data[["value"]], 0)) %>%
     unite("variable", "enduse", "carrier", sep = ".") %>%
-    quitte::aggregate_map(
-      mapping = regionmapping[!is.na(regionmapping$PFUDB), c("iso", "PFUDB")],
-      by = c("region" = "iso"),
-      forceAggregation = TRUE)
+    aggregate_map(mapping = regionmapping[!is.na(regionmapping$PFUDB), c("iso", "PFUDB")],
+                  by = c("region" = "iso"),
+                  forceAggregation = TRUE)
 
   # Aggregate GDPpop to PFU Country Code
   gdppop <- gdppop %>%
-    quitte::aggregate_map(
-      mapping = regionmapping[!is.na(regionmapping$PFUDB), c("iso", "PFUDB")],
-      by = c("region" = "iso"),
-      forceAggregation = TRUE,
-      weights = pop %>%
-        select("region", "period", "value") %>%
-        rename(weight = "value"),
-      weight_item_col = "region",
-      weight_val_col = "weight") %>%
+    aggregate_map(mapping = regionmapping[!is.na(regionmapping$PFUDB), c("iso", "PFUDB")],
+                  by = c("region" = "iso"),
+                  forceAggregation = TRUE,
+                  weights = pop %>%
+                    select("region", "period", "value") %>%
+                    rename(weight = "value"),
+                  weight_item_col = "region",
+                  weight_val_col = "weight") %>%
     select(-"model", -"scenario", -"unit", -"variable")
 
 
@@ -118,7 +120,7 @@ calcEfficiencyRegression <- function(gasBioEquality = TRUE) {
   data <- filter(data, .data[["value"]] > minEfficiency)
 
   vars <- data %>%
-    group_by(.data[["variable"]]) %>%
+    group_by(across(all_of("variable"))) %>%
     filter(.data[["variable"]] != "gdppop",
            !all(is.na(.data[["value"]]))) %>%
     getElement("variable") %>%
@@ -162,14 +164,12 @@ calcEfficiencyRegression <- function(gasBioEquality = TRUE) {
   parsFull <- parsFull %>%
     separate("variable", c("enduse", "carrier"), sep = "\\.") %>%
     mutate(region = "GLO") %>%
-    select("region", "carrier", "enduse", "Asym", "R0", "lrc")
+    select("region", "carrier", "enduse", "Asym", "R0", "lrc") %>%
+    as.magpie()
 
 
-  return(list(
-    x = as.magpie(parsFull),
-    weight = NULL,
-    description = "Regression Parameter for FE-UE-Efficiency Projection",
-    unit = ""
-  ))
-
+  return(list(x = parsFull,
+              isocountries = FALSE,
+              description = "Regression Parameter for FE-UE-Efficiency Projection",
+              unit = ""))
 }

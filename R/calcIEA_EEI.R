@@ -24,29 +24,6 @@ calcIEA_EEI <- function(subtype = c("buildings")) { #nolint object_name_linter
 
   subtype <- match.arg(subtype)
 
-  # enduse mapping
-  enduseNames <- c(
-    "R_SPACE_H"  = "space_heating",
-    "R_SPACE_C"  = "space_cooling",
-    "R_WATER_H"  = "water_heating",
-    "R_COOKING"  = "cooking",
-    "R_LIGHTING" = "lighting",
-    "R_APPLIANC" = "appliances",
-    "S_SPACE_H"  = "space_heating",
-    "S_SPACE_C"  = "space_cooling",
-    "S_LIGHTING" = "lighting"
-  )
-
-  # carrier mapping
-  carrierNames <- c(
-    "E_OIL"   = "petrol",
-    "E_GAS"   = "natgas",
-    "E_COAL"  = "coal",
-    "E_WOOD"  = "biomass",
-    "E_DHEAT" = "heat",
-    "E_ELEC"  = "elec"
-  )
-
   # energy unit conversion PJ -> EJ
   pj2ej <- 1e-3 #nolint object_name_linter
 
@@ -65,6 +42,19 @@ calcIEA_EEI <- function(subtype = c("buildings")) { #nolint object_name_linter
     select(-"model", -"scenario", -"unit")
 
 
+  # enduse mapping
+  enduseMap <- toolGetMapping(name = "enduseMap_IEA-EEI.csv",
+                              type = "sectoral",
+                              where = "mredgebuildings") %>%
+    pull("EDGE", "IEA_EEI")
+
+  # carrier mapping
+  carrierMap <- toolGetMapping(name = "carrierMap_IEA-EEI.csv",
+                               type = "sectoral",
+                               where = "mredgebuildings") %>%
+    pull("EDGE", "IEA_EEI")
+
+
 
   # PROCESS DATA ---------------------------------------------------------------
 
@@ -74,17 +64,17 @@ calcIEA_EEI <- function(subtype = c("buildings")) { #nolint object_name_linter
       # filter residential and service data and do some pre-processing
       rename("carrier" = "ITEM",
              "enduse"  = "ENDUSE") %>%
-      filter(.data[["enduse"]] %in% names(enduseNames),
-             .data[["carrier"]] %in% names(carrierNames)) %>%
+      filter(.data[["enduse"]] %in% names(enduseMap),
+             .data[["carrier"]] %in% names(carrierMap)) %>%
 
       # revalue carrier/enduse names
-      revalue.levels(carrier = carrierNames,
-                     enduse = enduseNames) %>%
+      revalue.levels(carrier = carrierMap,
+                     enduse  = enduseMap) %>%
       # sum up service and residential data
       group_by(across(-all_of("value"))) %>%
       summarise(value = sum(ifelse(all(is.na(.data[["value"]])),
-                                              NA,
-                                              sum(.data[["value"]], na.rm = TRUE))),
+                                   NA,
+                                   sum(.data[["value"]], na.rm = TRUE))),
                 .groups = "drop") %>%
       ungroup() %>%
 
@@ -111,7 +101,8 @@ calcIEA_EEI <- function(subtype = c("buildings")) { #nolint object_name_linter
 
   return(list(x = data,
               weight = NULL,
-              unit = "EJ",
+              unit = "EJ/yr",
+              min = 0,
               description = "IEA End Uses and Efficiency Indicators Database"))
 
 }

@@ -10,8 +10,8 @@
 #'
 #' @importFrom madrat readSource toolGetMapping
 #' @importFrom dplyr %>% filter mutate select group_by across all_of any_of
+#'   .data
 #' @importFrom quitte as.quitte removeColNa replace_column getRegs
-#' @importFrom rlang .data
 #' @export
 
 calcSharesBuildingDemand <- function(subtype = c("enduse", "carrier")) {
@@ -37,9 +37,9 @@ calcSharesBuildingDemand <- function(subtype = c("enduse", "carrier")) {
     as.quitte() %>%
     filter(!is.na(.data[["value"]]))
   urbanshare <- calcOutput("UrbanPast", aggregate = FALSE)
-  etpEurRegions <- toolGetMapping("regionmappingEDGE.csv", "regional")
+  etpEurRegions <- toolGetMapping("regionmappingEDGE.csv", "regional", where = "mappingfolder")
   regionalCorrespondence <- toolGetMapping("regionalCorrespondenceEDGECarrier.csv",
-                                           "sectoral")  %>%
+                                           "sectoral", "mredgebuildings")  %>%
     gather("enduse", "fillRegion", -"region") %>%
     rename(etpRegion = "region")
 
@@ -58,18 +58,20 @@ calcSharesBuildingDemand <- function(subtype = c("enduse", "carrier")) {
     heat    = c("remote heating")
   )
   mapCarriers <- do.call("rbind", lapply(names(mapCarriers), function(carrier) {
-      data.frame(variable = mapCarriers[[carrier]], carrier = carrier)
-    }))
+    data.frame(variable = mapCarriers[[carrier]], carrier = carrier)
+  }))
   daioglou <- daioglou %>%
     replace_column(mapCarriers, "variable", "carrier") %>%
     rename(carrier = "variable") %>%
     group_by(across(all_of(
-      c("region", "period", "quintile", "demographic", "carrier", "enduse")))) %>%
+      c("region", "period", "quintile", "demographic", "carrier", "enduse")
+    ))) %>%
     summarise(value = sum(.data[["value"]]), .groups = "drop") %>%
     ungroup() %>%
     mutate(value = ifelse(.data[["value"]] == 0, eps, .data[["value"]])) %>%
     group_by(across(all_of(
-      c("region", "period", "quintile", "demographic", "enduse")))) %>%
+      c("region", "period", "quintile", "demographic", "enduse")
+    ))) %>%
     mutate(value = .data[["value"]] / sum(.data[["value"]]))
 
   # aggregate demographics (population weighted) and drop quintiles
@@ -83,16 +85,18 @@ calcSharesBuildingDemand <- function(subtype = c("enduse", "carrier")) {
     ungroup() %>%
     left_join(urbanshare, by = c("region", "period")) %>%
     group_by(across(all_of(c("region", "period", "enduse", "carrier", "quintile")))) %>%
-    summarise(value = if (all(c("Rural", "Urban") %in% .data[["demographic"]])) {
-      .data[["value"]][.data[["demographic"]] == "Urban"] *
-        unique(.data[["urbanshare"]]) +
-        .data[["value"]][.data[["demographic"]] == "Rural"] *
-        (1 - unique(.data[["urbanshare"]]))
-    } else {
-      mean(.data[["value"]])
-    },
-    demographic = "Total",
-    .groups = "drop") %>%
+    summarise(
+      demographic = "Total",
+      value = if (all(c("Rural", "Urban") %in% .data[["demographic"]])) {
+        .data[["value"]][.data[["demographic"]] == "Urban"] *
+          unique(.data[["urbanshare"]]) +
+          .data[["value"]][.data[["demographic"]] == "Rural"] *
+            (1 - unique(.data[["urbanshare"]]))
+      } else {
+        mean(.data[["value"]])
+      },
+      .groups = "drop"
+    ) %>%
     rbind(daioglou) %>%
     filter(.data[["demographic"]] == "Total",
            .data[["quintile"]] == "0") %>%

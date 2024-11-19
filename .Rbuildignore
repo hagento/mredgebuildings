@@ -11,3 +11,4 @@
 ^tests/.lintr$
 ^Makefile$
 ^.*CITATION.cff$
+^\.git$

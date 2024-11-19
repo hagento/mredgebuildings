@@ -8,8 +8,3 @@ inst/extdata/regional/.DS_Store
 inst/extdata/sectoral/baitregression-files_test.csv
 inst/regional/
 inst/sectoral/
-man/calcBAITpars.Rd
-man/convertISIMIPbuildings.Rd
-man/convertWEO.Rd
-man/readISIMIPbuildings.Rd
-man/readWEO.Rd

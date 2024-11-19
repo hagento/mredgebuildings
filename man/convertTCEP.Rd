@@ -4,10 +4,12 @@
 \alias{convertTCEP}
 \title{Convert TCEP data base}
 \usage{
-convertTCEP(x)
+convertTCEP(x, subtype = "enduse")
 }
 \arguments{
 \item{x}{MAgPIE object with data from TCEP #nolint}
+
+\item{subtype}{character, type of data}
 }
 \value{
 magpie object

@@ -4,7 +4,10 @@
 \alias{readTCEP}
 \title{Read TCEP data base}
 \usage{
-readTCEP()
+readTCEP(subtype = "enduse")
+}
+\arguments{
+\item{subtype}{character, type of data}
 }
 \value{
 magpie object
@@ -13,5 +16,5 @@ magpie object
 Read TCEP data base
 }
 \author{
-Hagen Tockhorn
+Hagen Tockhorn, Robin Hasse
 }

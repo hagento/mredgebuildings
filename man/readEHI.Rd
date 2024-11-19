@@ -4,10 +4,11 @@
 \alias{readEHI}
 \title{Read EHI Heating Market Report}
 \usage{
-readEHI(subtype)
+readEHI(subtype = NULL)
 }
 \arguments{
-\item{subtype}{\if{html}{\out{<report series>}}.\if{html}{\out{<variable>}}}
+\item{subtype}{Character, report to read. if NULL, the most recent report is
+used for every data point.}
 }
 \value{
 magpie object

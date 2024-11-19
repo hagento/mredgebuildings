@@ -1,0 +1,21 @@
+technology,technologyBRICK,weightSFH,weightMFH,weightCom,comment
+Boilers gas (non-condensing),gabo,0.1,0.07,0.05,
+Boilers gas condensing*,gabo,0.8,0.67,0.45,
+Boilers gas condensing*,h2bo,1,0.75,0,
+Boilers oil (non-condensing),libo,0.8,0.8,0.8,
+Boilers oil condensing*,libo,0.2,0.2,0.2,
+Wood stoves or boiler pellets,biom,1,1,1,
+Heat pump air,ehp1,0.84,0.5,0.2,SFH weights are EU average shares from HP Barometer
+Heat pump water,ehp1,0.02,0.1,0.1,SFH weights are EU average shares from HP Barometer
+Heat pump ground,ehp1,0.14,0.4,0.7,SFH weights are EU average shares from HP Barometer
+Heat pump gas,NA,,,,
+Electric resistance (e_g_ convectors),reel,1,1,1,
+Gas individual (autonomous heater),gabo,0.1,0,0,
+Solar thermal (inc_ water tank storage),NA,,,,
+CHP ICE**,NA,,,,
+CHP fuel cell**,NA,,,,
+District heating,dihe,1,1,1,
+Large scale gas boilers (non-condensing),gabo,0,0.03,0.05,
+Large scale gas boilers condensing,gabo,0,0.23,0.45,
+Large scale gas boilers condensing,h2bo,0,0.25,1,
+Wood stoves or boiler pellets,sobo,1,1,1,we assume similarity between wood stoves and coal heaters

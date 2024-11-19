@@ -1,7 +1,9 @@
-ValidationKey: '781680'
+ValidationKey: '1523420'
 AutocreateReadme: yes
 AcceptedWarnings:
 - 'Warning: package ''.*'' was built under R version'
 - 'Warning: namespace ''.*'' is not available and has been replaced'
 AcceptedNotes: 'Unexported object imported by a .:::. call: .GDPuc:::wb_wdi.'
 allowLinterWarnings: no
+enforceVersionUpdate: no
+skipCoverage: no

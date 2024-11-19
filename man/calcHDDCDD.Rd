@@ -9,7 +9,8 @@ calcHDDCDD(
   bait = FALSE,
   multiscen = FALSE,
   rasDir = NULL,
-  cacheDir = NULL
+  cacheDir = NULL,
+  fromSource = FALSE
 )
 }
 \arguments{
@@ -22,6 +23,9 @@ calcHDDCDD(
 \item{rasDir}{absolute path to directory for saving raster files}
 
 \item{cacheDir}{absolute path to directory for pre-calculated BAIT regression parameters}
+
+\item{fromSource}{logical, if TRUE, read the previously calculated data that
+is temporarily saved as a source}
 }
 \value{
 magpie object of heating and cooling degree days

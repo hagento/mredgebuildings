@@ -12,7 +12,7 @@
 #' @importFrom dplyr %>% rename
 #' @importFrom rlang .data
 #' @importFrom tidyr unite
-#' @importFrom quitte as.quitte aggregate_map
+#' @importFrom quitte as.quitte aggregate_map factor.data.frame
 #' @importFrom magclass as.magpie
 #' @export
 
@@ -48,7 +48,7 @@ convertPFUDB <- function(x) {
 
   data <- data %>%
     as.quitte() %>%
-    quitte::factor.data.frame()
+    factor.data.frame()
 
 
   # Match Periods
@@ -83,45 +83,34 @@ convertPFUDB <- function(x) {
   # Disaggregate to ISO Level
   pfu <- pfu %>%
     droplevels() %>%
-    aggregate_map(
-      subset2agg = levels(pfu$variable),
-      weights = ieaFe %>%
-        rename(weight = "value") %>%
-        select(-"model", -"scenario", -"unit") %>%
-        droplevels(),
-      mapping = regionmapping[!is.na(regionmapping$PFUDB), c("PFUDB", "iso")],
-      by = c("region" = "PFUDB"),
-      weight_item_col = "region",
-      weight_val_col = "weight") %>%
+    aggregate_map(subset2agg = levels(pfu$variable),
+                  weights = ieaFe %>%
+                    rename(weight = "value") %>%
+                    select(-"model", -"scenario", -"unit") %>%
+                    droplevels(),
+                  mapping = regionmapping[!is.na(regionmapping$PFUDB), c("PFUDB", "iso")],
+                  by = c("region" = "PFUDB"),
+                  weight_item_col = "region",
+                  weight_val_col = "weight") %>%
     mutate(value = replace_na(.data[["value"]], 0)) %>%
     toolSplitBiomass(dfGDPpop, varName = "Biomass")
 
 
-    # Adaptation of correct Format
-    pfu <- pfu %>%
-      mutate(value = .data[["value"]] * TJ2EJ) %>%
-      rename(carrier = "variable",
-             enduse = "use") %>%
-      select(c("region", "period", "carrier", "enduse", "unit", "value"))
+  # Adaptation of correct Format
+  pfu <- pfu %>%
+    mutate(value = .data[["value"]] * TJ2EJ) %>%
+    rename(carrier = "variable",
+           enduse = "use") %>%
+    select(c("region", "period", "carrier", "enduse", "unit", "value"))
 
 
-    # OUTPUT -------------------------------------------------------------------
+  # OUTPUT -------------------------------------------------------------------
 
-    pfu <- pfu %>%
-      quitte::factor.data.frame() %>%
-      droplevels() %>%
-      as.magpie() %>%
-      toolCountryFill()
+  pfu <- pfu %>%
+    factor.data.frame() %>%
+    droplevels() %>%
+    as.magpie() %>%
+    toolCountryFill()
 
-
-    return(pfu)
-
-
-
-
-
-
-
-
-
+  return(pfu)
 }

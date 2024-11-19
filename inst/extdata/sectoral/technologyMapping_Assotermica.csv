@@ -1,0 +1,23 @@
+variableITA,variable,considerSales,technologyBRICK,comment
+Vendite|Bruciatori|Gasolio,Sales|Burners|Oil,TRUE,libo,
+Vendite|Bruciatori|Olio combustible,Sales|Burners|Fuel oil,TRUE,libo,
+Vendite|Bruciatori|Gas,Sales|Burners|Gas,TRUE,gabo,
+Vendite|Bruciatori|Misti,Sales|Burners|Mixed,TRUE,gabo,
+Vendite|Bruciatori,Sales|Burners,FALSE,,
+Vendite|Caldaie murali non condensazione|Solo riscaldamento,Sales|Wall-mounted boilers|Non-condensing|Heating only,FALSE,,
+Vendite|Caldaie murali non condensazione|Combinate istantanee,Sales|Wall-mounted boilers|Non-condensing|Instant combined,FALSE,,
+Vendite|Caldaie murali non condensazione|Combinate con bollitore (gruppo),Sales|Wall-mounted boilers|Non-condensing|combined with boiler (group),FALSE,,
+Vendite|Caldaie murali non condensazione,Sales|Wall-mounted boilers|Non-condensing,TRUE,gabo,
+Vendite|Caldaie murali a condensazione|Solo riscaldamento,Sales|Wall-mounted boilers|Condensing|Heating only,FALSE,,
+Vendite|Caldaie murali a condensazione|Combinate istantanee,Sales|Wall-mounted boilers|Condensing|Instant combined,FALSE,,
+Vendite|Caldaie murali a condensazione|Combinate con bollitore (gruppo),Sales|Wall-mounted boilers|Condensing|combined with boiler (group),FALSE,,
+Vendite|Caldaie murali a condensazione,Sales|Wall-mounted boilers|Condensing,FALSE,,we use EHI numbers for condensing boilers
+Vendite|Caldaie a basamento non condensazione|Solo riscaldamento,Sales|Floor-standing boilers|Non-condensing|Heating only,FALSE,,
+Vendite|Caldaie a basamento non condensazione|Totale combinate (istantanee + bollitore),Sales|Floor-standing boilers|Non-condensing|Total combined (instant + boiler),FALSE,,
+Vendite|Caldaie a basamento non condensazione,Sales|Floor-standing boilers|Non-condensing,TRUE,libo,
+Vendite|Caldaie a basamento a condensazione|Solo riscaldamento,Sales|Floor-standing boilers|Condensing|Heating only,FALSE,,
+Vendite|Caldaie a basamento a condensazione|Totale combinate (istantanee + bollitore),Sales|Floor-standing boilers|Condensing|Total combined (instant + boiler),FALSE,,
+Vendite|Caldaie a basamento a condensazione,Sales|Floor-standing boilers|Condensing,FALSE,,we use EHI numbers for condensing boilers
+Vendite|Caldaie per bruciatori ad aria soffiata|In acciaio|Solo riscaldamento,Sales|Burners for blown-air furnaces|of steel|Heating only,FALSE,,not extracted from PDFs for most years
+Vendite|Caldaie per bruciatori ad aria soffiata|In acciaio|Riscaldamento + acqua c_s_,Sales|Burners for blown-air furnaces|of steel|Heating + hot water,FALSE,,not extracted from PDFs for most years
+Vendite|Caldaie per bruciatori ad aria soffiata|In acciaio,Sales|Burners for blown-air furnaces,FALSE,,not extracted from PDFs for most years

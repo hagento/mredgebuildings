@@ -27,7 +27,8 @@ convertEurObservER <- function(x, subtype) {
     # Check that there are only unique values in disregarded columns
     nUnique <- lapply(
       apply(select(ts, -any_of(c("period", "reportperiod", "value"))), 2, unique),
-      length)
+      length
+    )
     if (any(nUnique > 1)) {
       stop(paste(names(nUnique)[which(nUnique > 1)], collapse = ", "),
            "have more than one unique value. Group by more dimensions.")

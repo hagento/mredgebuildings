@@ -87,8 +87,8 @@ calcFEbyEUEC <- function() {
 
   # remove district space cooling from disaggregation
   exclude <- exclude %>%
-    mutate(enduse = "space_cooling",
-           carrier = "heat")
+    rbind(data.frame(enduse = "space_cooling",
+                     carrier = "heat"))
 
 
   #--- Prepare toolDisaggregate Input
@@ -134,59 +134,33 @@ calcFEbyEUEC <- function() {
   # existing disaggregated data replaces values from optimization
   data <- ieaIODis %>%
     left_join(dataReplaceFull, by = c("region", "period", "carrier", "enduse")) %>%
-    mutate(value = ifelse(is.na(.data[["replaceValue"]]),
-                          .data[["value"]],
-                          .data[["replaceValue"]])) %>%
+    mutate(valueUncorrected = ifelse(is.na(.data[["replaceValue"]]),
+                                     .data[["value"]],
+                                     .data[["replaceValue"]])) %>%
+    group_by(across(all_of(c("region", "period", "carrier")))) %>%
+    mutate(value = ifelse(.data[["valueUncorrected"]] == 0,
+                          0,
+                          sum(.data[["value"]]) * proportions(.data[["valueUncorrected"]]))) %>%
+    ungroup() %>%
+    select(-"valueUncorrected") %>%
     select("region", "period", "unit", "carrier", "enduse", "value")
 
 
   # CORRECTIONS ----------------------------------------------------------------
 
-  # For unknown reasons, the enduse share of "space_cooling" for region "Africa"
-  # is not met and will therefore be corrected. Since "space_cooling" only corresponds
-  # to the carrier "elec", the correction is straight-forward.
-  # TODO: check if this can be fixed #nolint
-
-  elecSpaceCoolingShare <- sharesEU %>%
-    filter(.data[["region"]] == "Africa",
-           .data[["enduse"]] == "space_cooling") %>%
-    select("period", "value") %>%
-    rename("share" = "value")
+  # Since the data on district cooling is very sparse and the technology
+  # exhibits a low global penetration rate, we assume that all historic cooling
+  # demand is covered by # electricity but assume that district cooling might
+  # play a more significant role in the future.
 
   dataCorr <- data %>%
-    left_join(regmapping, by = c("region")) %>%
-    filter(.data[["regionAgg"]] == "Africa") %>%
-    left_join(elecSpaceCoolingShare, by = c("period")) %>%
-    select(-"regionAgg") %>%
-    group_by(across(-all_of(c("enduse", "carrier", "share", "value")))) %>%
-    mutate(value = ifelse(.data[["enduse"]] == "space_cooling",
-                          ifelse(!(.data[["carrier"]] == "elec"),
-                                 .data[["value"]],
-                                 sum(.data[["value"]], na.rm = TRUE) * .data[["share"]]),
-                          .data[["value"]] * (1 - .data[["share"]]))) %>%
-    ungroup() %>%
-    select(-"share")
-
-  dataFull <- rbind(dataCorr,
-                    data %>%
-                      left_join(regmapping, by = c("region")) %>%
-                      filter(.data[["regionAgg"]] != "Africa") %>%
-                      select(-"regionAgg"))
-
-
-  # Since the data on district cooling is very sparse and the low global penetration
-  # of the technology, we assume that all historic cooling demand is covered by
-  # electricity but assume that district cooling might play a more significant role
-  # in the future.
-
-  dataCorr <- dataFull %>%
     select(-"enduse", -"carrier", -"value") %>%
     unique() %>%
     mutate(enduse = "space_cooling",
            carrier = "heat",
            value = 0)
 
-  dataFull <- rbind(dataCorr, dataFull)
+  dataFull <- rbind(dataCorr, data)
 
 
 
@@ -198,11 +172,12 @@ calcFEbyEUEC <- function() {
     mutate(scenario = "history") %>%
     as.quitte() %>%
     as.magpie() %>%
-    toolCountryFill(1, verbosity = 2)
+    toolCountryFill(0, verbosity = 2)
 
 
   return(list(x = dataFull,
               weight = NULL,
+              min = 0,
               unit = "EJ",
-              description = "Historic Final Energy Data from IEA"))
+              description = "Historic Final Energy Data from IEA disaggregated by end use"))
 }

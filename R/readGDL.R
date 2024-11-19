@@ -22,8 +22,8 @@
 #'
 #' @importFrom utils read.csv
 #' @importFrom dplyr %>% select rename filter any_of across group_by summarise
+#'   .data
 #' @importFrom tidyr gather
-#' @importFrom rlang .data
 #' @importFrom quitte as.quitte
 #' @importFrom magclass as.magpie
 #' @export
@@ -33,10 +33,10 @@ readGDL <- function(subtype) {
   # split subtype
   database <- gsub("\\..*$", "", subtype)
   variable <- if (database == subtype) {
-      NULL
-    } else {
-      gsub("^.*\\.", "", subtype)
-    }
+    NULL
+  } else {
+    gsub("^.*\\.", "", subtype)
+  }
 
   # raw data
   data <- read.csv(switch(database,

@@ -64,7 +64,7 @@ readEuropeanCommissionRenovation <- function(subtype = "csv") {
       # make numeric
       table <- data.frame(table)
       table[, -1] <- apply(table[, -1], c(1, 2),
-                          function(x) as.numeric(sub("-", NA, x)))
+                           function(x) as.numeric(sub("-", NA, x)))
 
       # convert percentages to absolute
       table[, -1] <- table[, -1] * ifelse(percent[, -1], 0.01, 1)
@@ -82,7 +82,7 @@ readEuropeanCommissionRenovation <- function(subtype = "csv") {
 
     # Read Table across 2 pages
     readTables <- function(pdf, page1, page2, lines1, lines2,
-                          cols, variable, unit, subsector) {
+                           cols, variable, unit, subsector) {
       rbind(
         readTable(pdf, page1, lines1, cols, variable, unit, subsector),
         readTable(pdf, page2, lines2, cols, variable, unit, subsector)

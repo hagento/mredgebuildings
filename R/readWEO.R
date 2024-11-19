@@ -3,6 +3,12 @@
 #' @param subtype variable to define data subset ("Buildings", "Transport", "Industry")
 #'
 #' @author Hagen Tockhorn
+#'
+#' @importFrom tidyr gather
+#' @importFrom dplyr mutate select filter
+#' @importFrom magclass as.magpie
+#' @importFrom quitte as.quitte
+#' @importFrom readxl read_xlsx
 
 readWEO <- function(subtype) {
 

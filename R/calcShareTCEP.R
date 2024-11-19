@@ -8,6 +8,7 @@
 #' @importFrom rlang .data
 #' @importFrom quitte as.quitte
 #' @importFrom magclass as.magpie
+#'
 #' @export
 
 calcShareTCEP <- function() {
@@ -20,24 +21,29 @@ calcShareTCEP <- function() {
 
   # PROCESS DATA ---------------------------------------------------------------
 
+  # end-use shares
   shares <- data %>%
     select("region", "period", "enduse", "value") %>%
-    group_by(across(all_of(c("region", "period")))) %>%
-    mutate(value = .data[["value"]] / sum(.data[["value"]], na.rm = TRUE)) %>%
-    ungroup()
+    toolCalcShares(colShare = "enduse") %>%
+    as.quitte() %>%
+    as.magpie()
+
+  # weights
+  regShare <- data %>%
+    select("region", "period", "enduse", "value") %>%
+    toolCalcShares(colShare = c("region", "enduse")) %>%
+    as.quitte() %>%
+    as.magpie()
 
 
   # OUTPUT ---------------------------------------------------------------------
 
-  shares <- as.magpie(shares)
-
   return(list(
     x = shares,
-    weights = NULL,
+    weights = regShare,
     min = 0,
     max = 1,
     unit = "",
     description = "Enduse Shares from TCEP data"
   ))
-
 }

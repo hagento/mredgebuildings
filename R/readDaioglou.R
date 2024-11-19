@@ -15,7 +15,7 @@
 #'
 #' @importFrom utils read.csv
 #' @importFrom dplyr rename select mutate group_by summarise across %>% any_of
-#' @importFrom rlang .data
+#'   .data
 #' @importFrom tidyr replace_na
 #' @importFrom quitte as.quitte
 #' @importFrom magclass as.magpie collapseDim
@@ -103,7 +103,7 @@ readDaioglou <- function(subtype = "households.specific floor space") {
   if (!is.null(variable)) {
     if (variable %in% unique(data[["variable"]])) {
       data <- data %>%
-        filter(.data[["variable"]] == variable)
+        filter(.data[["variable"]] == !!variable)
     } else {
       stop(paste("Variable unavailable. Valid variables are: NULL,",
                  paste(paste0("'", unique(data[["variable"]]), "'"),

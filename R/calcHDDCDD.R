@@ -9,6 +9,8 @@
 #' @param multiscen boolean, does \code{mappingFile} cover more than one scenario?
 #' @param rasDir absolute path to directory for saving raster files
 #' @param cacheDir absolute path to directory for pre-calculated BAIT regression parameters
+#' @param fromSource logical, if TRUE, read the previously calculated data that
+#'   is temporarily saved as a source
 #'
 #' @return magpie object of heating and cooling degree days
 #'
@@ -26,7 +28,23 @@ calcHDDCDD <- function(mappingFile,
                        bait = FALSE,
                        multiscen = FALSE,
                        rasDir = NULL,
-                       cacheDir = NULL) {
+                       cacheDir = NULL,
+                       fromSource = FALSE) {
+
+  if (isTRUE(fromSource)) {
+    # Read previously calculated data from source
+    hddcdd <- readSource("HDDCDDtemp")
+
+    weight <- hddcdd
+    weight[] <- 1
+
+    return(list(x = hddcdd,
+                min = 0,
+                weight = weight,
+                unit = "K.d/yr",
+                description = "Heating and cooling degree days"))
+  }
+
 
   # initialize full calculation
   makeCalculations <- function(f, m, n, tLim, countries, pop, hddcddFactor,
@@ -95,7 +113,6 @@ calcHDDCDD <- function(mappingFile,
   # threshold temperature for heating and cooling [C]
   # NOTE: Staffel at. al 2023 gives global average of T_heat = 14, T_cool = 20
   tLim <- list("HDD" = seq(12, 22), "CDD" = seq(20, 26))
-  tLim <- list("HDD" = c(14), "CDD" = c(20))
 
   # standard deviations for temperature distributions
   tlimStd <- 5   # threshold
@@ -184,7 +201,7 @@ calcHDDCDD <- function(mappingFile,
   # PROCESS DATA----------------------------------------------------------------
 
   # calculate HDD/CDD-factors
-  hddcddFactor <- compHDDCDDFactors(tlow = tlow, tup = tup, tLim, 2.5, 2.5)
+  hddcddFactor <- compHDDCDDFactors(tlow = tlow, tup = tup, tLim, tambStd, tlimStd)
 
 
   # full calculation of degree days
@@ -578,11 +595,9 @@ compHDDCDDFactors <- function(tlow, tup, tlim, tambStd = 5, tlimStd = 5) {
   # t1 : ambient temperature variable
   # t2 : limit temperature variable
 
-  tlimK <- tlim
-
   # HDD
   heatingFactor <- function(t2, t1, tamb, tambStd, tlim, tlimStd) {
-    h <- dnorm(t1, mean = tamb, sd = tambStd) * dnorm(t2, mean = tlim, sd = tlimStd) * (t2 - t1)
+    h <- dnorm(t2, mean = tlim, sd = tlimStd) * dnorm(t1, mean = tamb, sd = tambStd) * (t2 - t1)
     return(h)
   }
 
@@ -590,23 +605,6 @@ compHDDCDDFactors <- function(tlow, tup, tlim, tambStd = 5, tlimStd = 5) {
   coolingFactor <- function(t2, t1, tamb, tambStd, tlim, tlimStd) {
     h <- dnorm(t2, mean = tlim, sd = tlimStd) * dnorm(t1, mean = tamb, sd = tambStd) * (t1 - t2)
     return(h)
-  }
-
-  # check if ambient/limit temperature interval is reasonable
-  # e.g. tLim = 17C and t_amb = -50C wouldn't give reasonable CDD
-  checkTDif <- function(tamb, tlim, typeDD, tambStd, tlimStd) {
-    check <- TRUE
-    stdDif <- tambStd + tlimStd
-    if (typeDD == "HDD") {
-      if (tamb - tlim > stdDif) {
-        check <- FALSE
-      }
-    } else if (typeDD == "CDD") {
-      if (tlim - tamb > stdDif) {
-        check <- FALSE
-      }
-    }
-    return(check)
   }
 
   t <- seq(tlow, tup, .1)
@@ -620,48 +618,44 @@ compHDDCDDFactors <- function(tlow, tup, tlim, tambStd = 5, tlimStd = 5) {
               do.call(
                 "rbind", lapply(
                   tlim[[typeDD]], function(.tlim) {
-                    if (!checkTDif(tamb, .tlim, typeDD, tambStd, tlimStd)) {
-                      tmp <- data.frame("T_amb"        = tamb,
-                                        "T_amb_K"      = round(tamb + 273.15, 1),
-                                        "tLim"         = .tlim,
-                                        "factor"       = 0,
-                                        "factor_err"   = 0,
-                                        "typeDD"       = typeDD)
-                    } else {
-                      # tlim integration boundaries
-                      x1 <- .tlim - 3*tlimStd
-                      x2 <- .tlim + 3*tlimStd
 
-                      if (typeDD == "HDD") {
-                        f <- integral2(heatingFactor,
-                                       xmin = x1,
-                                       xmax = x2,
-                                       ymin = tamb - 3*tambStd,
-                                       ymax = min(.tlim, tamb + 3*tambStd),
-                                       tamb = tamb,
-                                       tambStd = tambStd,
-                                       tlim = .tlim,
-                                       tlimStd = tlimStd,
-                                       reltol = 1e-1)
-                      } else {
-                        f <- integral2(coolingFactor,
-                                       xmin = x1,
-                                       xmax = x2,
-                                       ymin = max(.tlim, tamb - 3*tambStd),
-                                       ymax = tamb + 3*tambStd,
-                                       tamb = tamb,
-                                       tambStd = tambStd,
-                                       tlim = .tlim,
-                                       tlimStd = tlimStd,
-                                       reltol = 1e-1)
-                      }
-                      tmp <- data.frame("T_amb"        = tamb,
-                                        "T_amb_K"      = round(tamb + 273.15, 1),
-                                        "tLim"         = .tlim,
-                                        "factor"       = f$Q,
-                                        "factor_err"   = f$error,
-                                        "typeDD"       = typeDD)
-                    }
+                    # tlim integration boundaries
+                    x1 <- .tlim - 3 * tlimStd
+                    x2 <- .tlim + 3 * tlimStd
+
+                    # nolint start
+                    switch(typeDD,
+                           HDD = {
+                             fun <- heatingFactor
+                             ymin <- tamb - 3 * tambStd
+                             ymax <- min(.tlim, tamb + 3 * tambStd)
+                           },
+                           CDD = {
+                             fun  <- coolingFactor
+                             ymin <- max(.tlim, tamb - 3 * tambStd)
+                             ymax <- tamb + 3 * tambStd
+                           }
+                    )
+                    # nolint end
+
+                    f <- integral2(fun,
+                                   xmin = x1,
+                                   xmax = x2,
+                                   ymin = ymin,
+                                   ymax = ymax,
+                                   tamb = tamb,
+                                   tambStd = tambStd,
+                                   tlim = .tlim,
+                                   tlimStd = tlimStd,
+                                   reltol = 1e-1)
+
+                    tmp <- data.frame("T_amb"        = tamb,
+                                      "T_amb_K"      = round(tamb + 273.15, 1),
+                                      "tLim"         = .tlim,
+                                      "factor"       = f$Q,
+                                      "factor_err"   = f$error,
+                                      "typeDD"       = typeDD)
+
                     return(tmp)
                   }
                 )

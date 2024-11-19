@@ -9,8 +9,7 @@
 #' @author Robin Hasse
 #'
 #' @importFrom magclass getItems getItems<- add_dimension getSets<-
-#' @importFrom dplyr %>% filter mutate
-#' @importFrom rlang .data
+#' @importFrom dplyr %>% filter mutate .data
 #' @importFrom quitte as.quitte replace_column
 #'
 #' @export

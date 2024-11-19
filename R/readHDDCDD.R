@@ -13,9 +13,8 @@
 #' }
 #' @importFrom utils read.csv
 #' @importFrom tidyr gather
-#' @importFrom dplyr mutate rename
+#' @importFrom dplyr mutate rename .data
 #' @importFrom quitte as.quitte removeColNa
-#' @importFrom rlang .data
 
 readHDDCDD <- function(subtype = 18) {
 

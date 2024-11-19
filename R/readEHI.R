@@ -1,56 +1,64 @@
 #' Read EHI Heating Market Report
 #'
-#' @param subtype <report series>.<variable>
+#' @param subtype Character, report to read. if NULL, the most recent report is
+#'   used for every data point.
 #' @returns magpie object
 #'
 #' @author Robin Hasse
 #'
-#' @importFrom utils read.csv capture.output
-#' @importFrom dplyr %>% select mutate group_by filter rename
-#' @importFrom rlang .data
-#' @importFrom tidyr gather
-#' @importFrom quitte as.quitte
+#' @importFrom utils read.csv
+#' @importFrom dplyr %>% mutate filter select across all_of row_number arrange n
 #' @importFrom magclass as.magpie
 #' @export
 
-readEHI <- function(subtype) {
+readEHI <- function(subtype = NULL) {
 
-  # FUNCTIONS ------------------------------------------------------------------
+  # names of files must be orderable
+  files <- c(`2021` = "heatingMarketReport2021.csv",
+             `2023` = "heatingMarketReport2023.csv")
 
-
-  # PREPARE --------------------------------------------------------------------
-
-  # split subtype
-  if (!grepl("^[a-zA-Z0-9]{1,}\\.[a-zA-Z0-9]{1,}$", subtype)) {
-    stop("The subtype '", subtype, "' is invalid. ",
-         "It has to be of the structure '<report series>.<variable>''.")
+  data <- if (is.null(subtype)) {
+    # consider all files and always use the most recent information
+    do.call(rbind, lapply(names(files), function(fileName) {
+      read.csv(files[[fileName]]) %>%
+        mutate(file = fileName)
+    })) %>%
+      group_by(across(-all_of(c("file", "value")))) %>%
+      arrange(.data[["file"]]) %>%
+      filter(row_number() == n()) %>%
+      ungroup() %>%
+      select(-"file") %>%
+      as.magpie(spatial = "region", temporal = "period", datacol = "value")
+  } else if (subtype %in% names(files)) {
+    # read only given report
+    read.csv(files[[subtype]]) %>%
+      as.magpie(spatial = "region", temporal = "period", datacol = "value")
+  } else if (grepl("^consumerStudy2021\\.", subtype)) {
+    file <- paste0(sub("^consumerStudy2021\\.", "", subtype), ".csv")
+    replacementMatrix <- grepl("^table2-[2-6]\\.csv", file)
+    data <- read.csv(file.path("consumerStudy2021", file),
+                     encoding = "UTF-8", check.names = FALSE)
+    colnames(data) <- ifelse(colnames(data) == "", seq_along(data), colnames(data))
+    if (replacementMatrix) {
+      # remove total of old shares
+      data[[2]] <- NULL
+    }
+    data <- data %>%
+      pivot_longer(-1) %>%
+      mutate(value = as.numeric(sub("\\%$", "", .data[["value"]])) / 100)
+    if (replacementMatrix) {
+      colnames(data)[1:2] <- c("old", "new")
+      data <- as.magpie(data, datacol = "value") %>%
+        collapseDim(c(1, 2))
+    } else {
+      colnames(data)[1:2] <- c("age", "region")
+      data <- as.magpie(data, spatial = "region", datacol = "value") %>%
+        collapseDim(2)
+    }
+  } else {
+    stop("Invalid subtype: '", subtype, "'. Available subtypes: NULL, ",
+         paste(names(files), collapse = ", "))
   }
-  report   <- gsub("\\..*$", "", subtype)
-  variable <- gsub("^.*\\.", "", subtype)
-
-  # pick file
-  file <- switch(report,
-    `2021`    = "heatingMarketReport2021.csv",
-    stop("Invalid subtype. The report '", report, "' is not available."))
-
-
-
-  # PROCESS DATA ---------------------------------------------------------------
-
-  switch(subtype,
-    `2021.stockHeaters` = {
-      var <- "^Installed stock of heaters\\|"
-      data <- read.csv(file) %>%
-        filter(grepl(var, .data[["variable"]])) %>%
-        mutate(variable = gsub(var, "", .data[["variable"]]))
-    },
-    stop("Invalid subtype. The variable '", variable,
-         "' is not supported for the report '", report, "'.")
-  )
-
-  data <- data %>%
-    as.quitte() %>%
-    as.magpie()
 
   return(data)
 }

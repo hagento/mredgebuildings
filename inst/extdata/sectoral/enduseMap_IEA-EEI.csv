@@ -1,0 +1,10 @@
+IEA_EEI,EDGE
+R_SPACE_H,space_heating
+R_SPACE_C,space_cooling
+R_WATER_H,water_heating
+R_COOKING,cooking
+R_LIGHTING,lighting
+R_APPLIANC,appliances
+S_SPACE_H,space_heating
+S_SPACE_C,space_cooling
+S_LIGHTING,lighting

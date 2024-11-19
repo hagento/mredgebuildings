@@ -2,7 +2,7 @@
 % Please edit documentation in R/toolDisaggregate.R
 \name{.disaggregate}
 \alias{.disaggregate}
-\title{Disaggregate energy demand within on aggregated region}
+\title{Disaggregate energy demand within an aggregated region}
 \usage{
 .disaggregate(subset, key)
 }

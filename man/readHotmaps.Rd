@@ -8,7 +8,11 @@ readHotmaps()
 }
 \description{
 Consistent building stock of EU28 residential and commercial sector. The data
-presents a snapshot, I guess in 2016 but this is not clear to e yet.
+presents a snapshot, I guess in 2016 but this is not clear to me yet.
+}
+\details{
+There are a few duplicate rows. Due to inconsistent values we average across
+duplicates.
 }
 \author{
 Robin Hasse

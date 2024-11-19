@@ -8,8 +8,7 @@ calcShares(
   subtype = c("carrier_nonthermal", "carrier_thermal", "enduse_nonthermal",
     "enduse_thermal"),
   carrierCorrection = FALSE,
-  feOnly = FALSE,
-  feWeights = TRUE
+  feOnly = FALSE
 )
 }
 \arguments{
@@ -18,8 +17,6 @@ calcShares(
 \item{carrierCorrection}{allows additional corrections}
 
 \item{feOnly}{specifies if shares or quantities are returned}
-
-\item{feWeights}{calculate additional FE weights for share aggregation}
 }
 \value{
 data.frame with historic energy demands
@@ -44,7 +41,7 @@ steps (e.g. toolDisaggregate) where EC shares are not necessarily used.
 Hence, this case is by default disabled.
 
 In the thermal case, the enduse "appliances" is transformed to "refrigerators"
-using the region-specific refrigerator share used in EDGE-B. Higher-resoluted
+using the region-specific refrigerator share used in EDGE-B. Higher resolved
 data was not available.
 }
 \note{

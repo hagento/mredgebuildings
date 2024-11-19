@@ -42,8 +42,8 @@ convertEUBuildingsDB <- function(x, subtype) {
 
   # manually drop erroneous data points
   if (category == "BuildingStockCharacteristics") {
-      data[, 2017, c("Total floor area of single family dwellings_m2",
-                     "Total floor area of multi family dwellings_m2")] <- NA
+    data[, 2017, c("Total floor area of single family dwellings_m2",
+                   "Total floor area of multi family dwellings_m2")] <- NA
   }
 
   # fill missing regions with NA
@@ -66,11 +66,12 @@ convertEUBuildingsDB <- function(x, subtype) {
       # the shares perfectly add up to 1, so 'more than 5' means '5 or more'
       getNames(data) <- gsub(
         "^(Number|Share) of dwelling(s|) |occupied by | persons.*|_1$", "",
-         gsub("with single-person households", "1",
-              gsub("more than ", ">=", getNames(data))))
+        gsub("with single-person households", "1",
+             gsub("more than ", ">=", getNames(data)))
+      )
       getSets(data)[3] <- "householdSize"
     },
-      stop("'", subtype, "' is an invalid subtype.")
+    stop("'", subtype, "' is an invalid subtype.")
   )
 
   return(data)

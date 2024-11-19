@@ -15,7 +15,13 @@
 #'
 #' @author Hagen Tockhorn
 #'
-#' @importFrom stats SSasymp
+#' @importFrom stats SSasymp na.omit
+#' @importFrom dplyr reframe mutate select left_join rename group_by across all_of ungroup
+#' filter semi_join
+#' @importFrom tidyr spread unite replace_na
+#' @importFrom madrat calcOutput toolGetMapping
+#' @importFrom quitte as.quitte interpolate_missing_periods removeColNa
+#' @importFrom magclass as.magpie
 #'
 #' @export
 
@@ -178,25 +184,26 @@ calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
     for (gasVar in names(eqEffs)) {
       bioEffs <- gasEffs %>%
         filter(.data[["variable"]] == gasVar) %>%
-        mutate(variable = eqEffs[gasVar][[1]])
+        mutate(variable = eqEffs[gasVar][[1]]) %>%
+        separate("variable", into = c("enduse", "carrier"), sep = "\\.")
 
-      efficiencies <- efficiencies %>%
-        filter(.data[["variable"]] != eqEffs[gasVar][[1]]) %>%
-        rbind(bioEffs)
+      efficiencies <- rbind(
+        anti_join(efficiencies, bioEffs, by = c("region", "period", "enduse", "carrier", "scenario")),
+        bioEffs
+      )
     }
   }
 
-  efficiencies <- efficiencies %>%
-    separate(col = "variable", into = c("enduse", "carrier"), sep = "\\.")
 
-
-  #--- Weights
-  feWeights <- feWeights %>%
+  # FE Weights
+  feWeights <- pfu %>%
+    interpolate_missing_periods(period = seq(1990, 2020), expand.values = TRUE) %>%
     filter(.data[["unit"]] == "fe") %>%
-    select("region", "period", "enduse", "carrier", "value") %>%
-    mutate(value = ifelse(.data[["value"]] == 0, 1e-6, .data[["value"]])) %>%
-    sumDF(c("appliances", "lighting"), "appliances_light") %>%
-    semi_join(efficiencies, by = c("region", "carrier", "enduse", "period")) %>%
+    semi_join(efficiencies, by = c("region", "period", "carrier", "enduse")) %>%
+    group_by(across(all_of(c("period", "region")))) %>%
+    reframe(value = sum(.data[["value"]], na.rm = TRUE)) %>%
+    mutate(value = replace_na(.data[["value"]], 0)) %>%
+    as.quitte() %>%
     as.magpie()
 
 
@@ -205,17 +212,9 @@ calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
   efficiencies <- efficiencies %>%
     as.magpie()
 
-  return(list(
-    x = efficiencies,
-    weights = feWeights,
-    unit = "",
-    min = 0,
-    description = "Historical Conversion Efficiencies from FE to UE"
-  ))
-
-
-
-
-
-
+  return(list(x = efficiencies,
+              weights = feWeights,
+              min = 0,
+              unit = "",
+              description = "Historical Conversion Efficiencies from FE to UE"))
 }

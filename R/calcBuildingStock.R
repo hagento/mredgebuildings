@@ -12,13 +12,12 @@
 #' @param subtype Character with subsector
 #' @returns MAgPIE object with historic building stock
 #'
-#' @importFrom madrat readSource
-#' @importFrom dplyr %>% filter mutate group_by across across summarise n
+#' @importFrom madrat readSource toolGetMapping
+#' @importFrom dplyr %>% .data filter mutate group_by across across summarise n
 #' anti_join bind_rows group_modify select full_join ungroup arrange right_join
-#' semi_join inner_join
+#' semi_join inner_join last_col relocate
 #' @importFrom quitte as.quitte revalue.levels interpolate_missing_periods
 #' calc_addVariable getPeriods
-#' @importFrom rlang .data
 #' @importFrom tidyr separate
 #' @importFrom zoo rollmean
 #' @importFrom stats pweibull
@@ -131,7 +130,8 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
       rbind(dwellingTypeRatio) %>%
       calc_addVariable(
         .variable_SFH = paste(varTotal, "*", "dwellingRatio_SFH"),
-        .variable_MFH = paste(varTotal, "*", "dwellingRatio_MFH")) %>%
+        .variable_MFH = paste(varTotal, "*", "dwellingRatio_MFH")
+      ) %>%
       mutate(variable = gsub("\\.variable", var, .data[["variable"]])) %>%
       filter(!grepl("^dwellingRatio_(SFH|MFH)$", .data[["variable"]]))
 
@@ -166,11 +166,11 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
   completeRollmean <- function(data, k) {
     data %>%
       arrange(.data[["period"]]) %>%
-      mutate(value = unlist(rollmean(.data[["value"]], k = k,
-                                     fill = c(head(.data[["value"]], 1),
-                                              mean(.data[["value"]]),
-                                              tail(.data[["value"]], 1))
-                                     )))
+      mutate(value = unlist(rollmean(
+        .data[["value"]], k = k, fill = c(head(.data[["value"]], 1),
+                                          mean(.data[["value"]]),
+                                          tail(.data[["value"]], 1))
+      )))
   }
 
 
@@ -225,7 +225,7 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
 
       # EU census data on building type an vintage of dwellings (not used)
       if (FALSE) {
-        typeVintage <- readSource("CensusHub", "typeVintage") %>%
+        typeVintage <- readSource("CensusHub", "typeVintage") %>% # nolint: object_usage_linter.
           collapseDim(keepdim = "period") %>%
           as.quitte() %>%
           filter(!is.na(.data[["value"]]),
@@ -238,7 +238,8 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
           mutate(constructionPeriod = factor(
             .data[["constructionPeriod"]],
             levels = c("before1919", "1919-1945", "1946-1960", "1961-1970", "1971-1980",
-                       "1981-1990", "1991-2000", "2001-2005", "after2005"))) %>%
+                       "1981-1990", "1991-2000", "2001-2005", "after2005")
+          )) %>%
           group_by(across(all_of(c("period", "region", "constructionPeriod", "buildingType")))) %>%
           summarise(value = sum(.data[["value"]]), .groups = "drop")
       }
@@ -362,7 +363,8 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
           otherRE      = "RA000 - RA410 - `R5110-5150_W6000RI` - R5300 - RA600",
           heat         = "H8000",
           elec         = "E7000",
-          variable = carrier, only.new = TRUE, units = "TJ", completeMissing = TRUE)
+          variable = carrier, only.new = TRUE, units = "TJ", completeMissing = TRUE
+        )
 
 
 
@@ -479,12 +481,14 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
         mutate(
           constructionPeriod = unlist(lapply(
             gsub("before ", "1900-", .data[["variable"]]),
-            function(x) mean(as.numeric(unlist(strsplit(x, "-")))))),
+            function(x) mean(as.numeric(unlist(strsplit(x, "-"))))
+          )),
           value = residualVintage(head(.data[["value"]], 1),
                                   head(.data[["period"]], 1),
                                   .data[["period"]],
                                   .data[["constructionPeriod"]],
-                                  unique(.data[["buildingType"]]))) %>%
+                                  unique(.data[["buildingType"]]))
+        ) %>%
         ungroup() %>%
         select(-"constructionPeriod") %>%
         anti_join(dwellingVintages,
@@ -510,11 +514,12 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
           .data[["period"]] > .data[["lastPeriod"]] &
             .data[["variable"]] != "after 2010",
           cummin((1 + .data[["relGap"]]) * .data[["value"]]),
-          .data[["value"]])) %>%
+          .data[["value"]]
+        )) %>%
         group_by(across(all_of(c("region", "period", "buildingType")))) %>%
         mutate(value = ifelse(.data[["variable"]] == "after 2010",
                               .data[["value"]] + .data[["stock"]] -
-                                       sum(.data[["value"]]),
+                                sum(.data[["value"]]),
                               .data[["value"]])) %>%
         group_by(across(all_of(c("region", "variable", "buildingType")))) %>%
         arrange(.data[["period"]]) %>%
@@ -522,7 +527,8 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
           .data[["period"]] > .data[["lastPeriod"]] &
             .data[["variable"]] == "after 2010",
           cummax(.data[["value"]]),
-          .data[["value"]])) %>%
+          .data[["value"]]
+        )) %>%
         select(-"lastPeriod", -"stock", -"relGap") %>%
         anti_join(dwellingVintages, by = c("region", "period", "variable", "buildingType")) %>%
         rbind(dwellingVintages)
@@ -542,12 +548,14 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
           constructionPeriod = unlist(lapply(
             gsub("before ", "1900-",
                  gsub("after 2010", "2010-2020", .data[["variable"]])),
-            function(x) mean(as.numeric(unlist(strsplit(x, "-")))))),
+            function(x) mean(as.numeric(unlist(strsplit(x, "-"))))
+          )),
           value = residualVintage(tail(.data[["value"]], 1),
                                   tail(.data[["period"]], 1),
                                   .data[["period"]],
                                   .data[["constructionPeriod"]],
-                                  unique(.data[["buildingType"]]))) %>%
+                                  unique(.data[["buildingType"]]))
+        ) %>%
         ungroup() %>%
         select(-"constructionPeriod")
 
@@ -560,15 +568,18 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
             .data[["variable"]] == "after 2010",
             pmax(0, .data[["value"]][.data[["period"]] == .data[["firstPeriod"]]] *
                    (.data[["period"]] - 2009) / (.data[["firstPeriod"]] - 2009)),
-            .data[["value"]]),
+            .data[["value"]]
+          ),
           value = ifelse(
             .data[["variable"]] == "2000-2010" & .data[["period"]] < 2010,
             pmax(0, .data[["value"]][.data[["period"]] == min(2010, .data[["firstPeriod"]], na.rm = TRUE)] *
                    (.data[["period"]] - 1999) / (min(2010, .data[["firstPeriod"]], na.rm = TRUE) - 1999)),
-            .data[["value"]]),
+            .data[["value"]]
+          ),
           value = ifelse(.data[["variable"]] == "after 2010" & .data[["period"]] <= 2010,
                          0,
-                         .data[["value"]]))
+                         .data[["value"]])
+        )
 
       # scale total
       dwellingVintagesEarly <- dwellingVintagesEarly %>%
@@ -676,9 +687,9 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
                                                  .data[["lastPeriod"]] + 1 - smoothPeriods)) /
                          pmin(smoothPeriods, .data[["lastPeriod"]] - .data[["firstPeriod"]] + 2)),
                 .data[["value.x"]]
-                )
               )
-            ),
+            )
+          ),
           value = ifelse(is.na(.data[["value.x"]]), .data[["value.y"]], .data[["value"]])
         ) %>%
         select(-"value.x", -"value.y", -"firstPeriod", -"lastPeriod")
@@ -793,10 +804,11 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
           heatpump = .data[["hpBarometer"]] *
             (.data[["heatpump"]] / .data[["hpBarometer"]])[!is.na(.data[["heatpump"]])],
           resistElec = .data[["elecStock"]] *
-            ((.data[["resistElec"]] + .data[["heatpump"]]) /
-               .data[["elecStock"]])[!is.na(.data[["resistElec"]])] -
+            ((.data[["resistElec"]] + .data[["heatpump"]]) / .data[["elecStock"]]
+            )[!is.na(.data[["resistElec"]])] -
             .data[["heatpump"]],
-          variable = "dwellings") %>%
+          variable = "dwellings"
+        ) %>%
         gather("carrier", "value", "resistElec", "heatpump") %>%
         select(-"elecStock", -"hpBarometer") %>%
         mutate(value = pmax(0, .data[["value"]]))
@@ -855,15 +867,15 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
         summarise(avgValue = mean(.data[["value"]], na.rm = TRUE),
                   .groups = "drop") %>%
         arrange(.data[["period"]]) %>%
-        mutate(growth = mean(diff(.data[["avgValue"]]) / diff(.data[["period"]]) /
-                               head(.data[["avgValue"]], -1),
+        mutate(growth = mean(diff(.data[["avgValue"]]) / diff(.data[["period"]]) / head(.data[["avgValue"]], -1),
                              na.rm = TRUE),
                firstPeriod = min(.data[["period"]][!is.na(.data[["avgValue"]])]),
                avgValue = ifelse(
                  is.na(.data[["avgValue"]]),
                  .data[["avgValue"]][.data[["period"]] == .data[["firstPeriod"]]] *
                    (1 + .data[["growth"]])^(.data[["period"]] - .data[["firstPeriod"]]),
-                 .data[["avgValue"]])) %>%
+                 .data[["avgValue"]]
+               )) %>%
         full_join(hpShareElecHeating, by = "period") %>%
         group_by(.data[["region"]]) %>%
         arrange(.data[["period"]]) %>%
@@ -873,7 +885,8 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
             ifelse(all(is.na(.data[["value"]])),
                    1,
                    head((.data[["value"]] / .data[["avgValue"]])[!is.na(.data[["value"]])], 1)),
-          .data[["value"]])) %>%
+          .data[["value"]]
+        )) %>%
         select(-"growth", -"firstPeriod", -"avgValue") %>%
         completeRollmean(3)
 
@@ -963,7 +976,8 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
           floorPerDwelling_MFH = paste("(floorPerDwelling_Total * (dwellings_SFH + dwellings_MFH)) /",
                                        "(floorRatio * dwellings_SFH + dwellings_MFH)"),
           floorPerDwelling_SFH = "floorPerDwelling_MFH * floorRatio",
-                         units = "m2") %>%
+          units = "m2"
+        ) %>%
         filter(grepl("^floorPerDwelling_(SFH|MFH)", .data[["variable"]])) %>%
         separate("variable", c("variable", "buildingType"), sep = "_")
 
@@ -992,16 +1006,44 @@ calcBuildingStock <- function(subtype = c("residential", "commercial")) {
     }
   )
 
+
+  ## map to BRICK dimensions ====
+
+  # TODO: This remapping should actually happen upstream where the primary # nolint: todo_comment_linter.
+  # sources that define the dimensions are read
+
+  # vintage
+  vinMap <- toolGetMapping("refMap_mredgebuildings_vintage.csv", "sectoral",
+                           "mredgebuildings") %>%
+    select(vintage = "variable", "vin") %>%
+    unique()
+
+  # heating system
+  hsMap <- toolGetMapping("refMap_mredgebuildings_heating.csv", "sectoral",
+                          "mredgebuildings") %>%
+    select(heating = "variable", "hs") %>%
+    unique()
+
+  # remap
+  stock <- stock %>%
+    left_join(vinMap, by = "vintage") %>%
+    left_join(hsMap, by = "heating") %>%
+    select(-"vintage", -"heating") %>%
+    rename(typ = "buildingType",
+           loc = "location") %>%
+    relocate("value", .after = last_col())
+
   # convert to magpie object
   stock <- stock %>%
+    mutate(value = .data[["value"]] / 1E6) %>% # m2 -> million m2
     select(-"unit") %>%
-    as.magpie(spatial = "region", temporal = "period") %>%
+    as.magpie(spatial = "region", temporal = "period", datacol = "value") %>%
     collapseDim() %>%
     toolCountryFill(verbosity = 2)
 
   return(list(x = stock,
               weight = NULL,
               min = 0,
-              unit = "1",
+              unit = "million dwellings or million m2",
               description = "Number of dwellings and floor space in the European building stock"))
 }

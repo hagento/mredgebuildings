@@ -4,10 +4,14 @@
 #'
 #' @author Hagen Tockhorn
 #'
-#' @export
+#' @importFrom madrat calcOutput
+#' @importFrom dplyr select mutate rename
+#' @importFrom quitte as.quitte
+#' @importFrom magclass as.magpie
 
 
 calcDensity <- function() {
+
   # READ-IN DATA----------------------------------------------------------------
 
   pop <- calcOutput("PopulationPast", aggregate = FALSE) %>%
@@ -62,8 +66,4 @@ calcDensity <- function() {
               weight = NULL,
               unit = "m^-2",
               description = "Population Density in m^-2"))
-
-
-
-
 }

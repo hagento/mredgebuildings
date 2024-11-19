@@ -19,8 +19,7 @@
 #' @author Pascal Führlich, Robin Hasse
 #'
 #' @importFrom utils read.csv
-#' @importFrom dplyr %>% select mutate
-#' @importFrom rlang .data
+#' @importFrom dplyr %>% select mutate .data
 #' @importFrom tidyr unite
 #' @importFrom quitte as.quitte
 #' @importFrom magclass as.magpie

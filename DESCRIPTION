@@ -1,30 +1,40 @@
 Type: Package
 Package: mredgebuildings
 Title: Prepare data to be used by the EDGE-Buildings model
-Version: 0.4.0
-Date: 2023-07-04
+Version: 0.7.6
+Date: 2024-11-18
 Authors@R: c(
     person("Robin", "Hasse", , "robin.hasse@pik-potsdam.de", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0003-1818-3186")),
     person("Pascal", "Führlich", , "pascal.fuehrlich@pik-potsdam.de", role = "aut"),
     person("Antoine", "Levesque", role = "aut"),
-    person("Hagen", "Tockhorn", role="aut")
+    person("Hagen", "Tockhorn", role = "aut")
   )
 Description: Prepare data to be used by the EDGE-Buildings model.
 License: MIT + file LICENSE
 URL: https://github.com/pik-piam/mredgebuildings
 Depends:
     madrat (>= 2.8.1),
-    magclass,
+    magclass (>= 6.11.0),
     mrdrivers (>= 1.0.0),
-    mrcommons (>= 1.7.1)
+    mrcommons (>= 1.35.0),
+    mrremind (>= 0.175.4)
 Imports:
+    brick (>= 0.5.0),
     dplyr,
+    GDPuc,
+    ncdf4,
+    openxlsx,
+    purrr,
     plyr,
+    pracma,
+    raster,
+    rlang,
+    stringr,
+    terra,
     quadprog,
     quitte,
     readxl,
-    rlang,
     tidyr,
     zoo
 Suggests:
@@ -34,4 +44,4 @@ Suggests:
     testthat
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2

@@ -1,0 +1,7 @@
+technologyDEU,technology,technologyBRICK,comment
+Biomasse-Kessel,Biomass boiler,biom,
+Waermepumpen,Heat pump,ehp1,
+Oel-Kessel (Heizwert),Oil boiler (non-condensing),libo,
+Oel-Kessel (Brennwert),Oil boiler (condensing),libo,
+Gas-Kessel (Heizwert),Gas boiler (non-condensing),gabo,
+Gas-Kessel (Brennwert),Gas boiler (condensing),gabo,

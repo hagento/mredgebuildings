@@ -27,7 +27,8 @@ readEurostatBuildings <- function(subtype) {
   files <- list(
     nrg_inf_hptc = "nrg_inf_hptc__custom_2211098_linear.csv",
     ilc_hcmh02   = "ilc_hcmh02_linear.csv",
-    nrg_d_hhq    = "nrg_d_hhq_linear.csv")
+    nrg_d_hhq    = "nrg_d_hhq_linear.csv"
+  )
 
   data <- toolSubtypeSelect(subtype, files) %>%
     read.csv() %>%

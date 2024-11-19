@@ -9,6 +9,7 @@
 #'
 #' @param subtype specifies share
 #' @param feOnly specifies if shares or quantities are returned
+#'
 #' @returns MAgPIE object with historic shares
 #'
 #' @author Robin Hasse, Antoine Levesque, Hagen Tockhorn
@@ -25,16 +26,6 @@
 #' @export
 
 calcShareETP <- function(subtype = c("enduse", "carrier"), feOnly = FALSE) {
-  # FUNCTIONS ------------------------------------------------------------------
-
-  # Calculate Shares
-  calcShares <- function(data, colShare) {
-    data %>%
-      group_by(across(-all_of(c(colShare, "value")))) %>%
-      mutate(value = .data[["value"]] / sum(.data[["value"]], na.rm = TRUE)) %>%
-      ungroup()
-  }
-
 
   # READ-IN DATA ---------------------------------------------------------------
 
@@ -45,6 +36,7 @@ calcShareETP <- function(subtype = c("enduse", "carrier"), feOnly = FALSE) {
   gdppop <- calcOutput("GDPPop", aggregate = FALSE) %>%
     as.quitte() %>%
     select(-"model", -"scenario", -"unit")
+
 
 
   # PARAMETERS -----------------------------------------------------------------
@@ -64,23 +56,17 @@ calcShareETP <- function(subtype = c("enduse", "carrier"), feOnly = FALSE) {
 
   # Variable Mappings
   reval <- switch(shareOf,
-    enduse = c(
-      `Buildings|Buildings - Total final energy consumption by end-use|Space heating` = "space_heating",
-      `Buildings|Buildings - Total final energy consumption by end-use|Water heating` = "water_heating",
-      `Buildings|Buildings - Total final energy consumption by end-use|Space cooling` = "space_cooling",
-      `Buildings|Buildings - Total final energy consumption by end-use|Lighting` = "lighting",
-      `Buildings|Buildings - Total final energy consumption by end-use|Appliances and miscellaneous equipments`
-          = "appliances",
-      `Buildings|Buildings - Total final energy consumption by end-use|Cooking` = "cooking"),
+    enduse = toolGetMapping(name = "enduseMap_IEA-ETP.csv",
+                            type = "sectoral",
+                            where = "mredgebuildings") %>%
+      pull("EDGE", "IEA_ETP"),
 
-    carrier = c(
-      `Buildings|Buildings - Total final energy consumption|Coal` = "coal",
-      `Buildings|Buildings - Total final energy consumption|Oil products` = "petrol",
-      `Buildings|Buildings - Total final energy consumption|Natural gas` = "natgas",
-      `Buildings|Buildings - Total final energy consumption|Commercial heat` = "heat",
-      `Buildings|Buildings - Total final energy consumption|Electricity` = "elec",
-      `Buildings|Buildings - Total final energy consumption|Biomass, waste and other renewables` = "biomod")
+    carrier = toolGetMapping(name = "carrierMap_IEA-ETP.csv",
+                             type = "sectoral",
+                             where = "mredgebuildings") %>%
+      pull("EDGE", "IEA_ETP")
   )
+
 
 
   # PROCESS DATA ---------------------------------------------------------------
@@ -89,18 +75,17 @@ calcShareETP <- function(subtype = c("enduse", "carrier"), feOnly = FALSE) {
   etpFilter <- etp %>%
     as.quitte() %>%
     filter(.data[["period"]] %in% periods,
-           .data[["data"]] %in% scen) %>%
-    filter(.data[["data1"]] %in% names(reval),
+           .data[["scenario"]] %in% scen) %>%
+    filter(.data[["variable"]] %in% names(reval),
            !is.na(.data[["value"]])) %>%
-    mutate(data1 = droplevels(revalue(.data[["data1"]], reval)))
+    mutate(variable = droplevels(revalue(.data[["variable"]], reval)))
 
-  names(etpFilter)[names(etpFilter) == "data1"] <- shareOf
+  names(etpFilter)[names(etpFilter) == "variable"] <- shareOf
 
 
   # Extrapolate 'biotrad' share from 'biomod' values for carrier separation
   if (subtype == "carrier") {
     etpFilter <- etpFilter %>%
-      select(-"variable") %>%
       rename(variable = "carrier") %>%
       toolSplitBiomass(gdppop, varName = "biomod") %>%
       rename(carrier = "variable")
@@ -122,17 +107,17 @@ calcShareETP <- function(subtype = c("enduse", "carrier"), feOnly = FALSE) {
       group_by(across(all_of(shareOf))) %>%
       summarise(value = sum(.data[["value"]]), .groups = "drop") %>%
       ungroup() %>%
-      calcShares(shareOf) %>%
+      toolCalcShares(shareOf) %>%
       mutate(value = replace_na(.data[["value"]], 0))
 
 
     # Local Shares
     share <- etpFilter %>%
-      select(-"data", -"data2", -"unit", -"model", -"scenario") %>%
+      select(-"unit", -"model", -"scenario") %>%
       group_by(across(all_of(c("region", "period", shareOf)))) %>%
       summarise(value = sum(.data[["value"]]), .groups = "drop") %>%
       ungroup() %>%
-      calcShares(tail(shareOf, 1)) %>%
+      toolCalcShares(tail(shareOf, 1)) %>%
       mutate(value = replace_na(.data[["value"]], 0)) %>%
       complete(!!!syms(c("region", "period", shareOf))) %>%
       left_join(shareGlobal, by = shareOf) %>%
@@ -141,7 +126,7 @@ calcShareETP <- function(subtype = c("enduse", "carrier"), feOnly = FALSE) {
                             .data[["value.x"]]),
              value = replace_na(.data[["value"]], 0)) %>%
       select(-"value.x", -"value.y") %>%
-      calcShares(tail(shareOf, 1))
+      toolCalcShares(tail(shareOf, 1))
 
 
     # Weights: Regional Share of FE
@@ -157,82 +142,85 @@ calcShareETP <- function(subtype = c("enduse", "carrier"), feOnly = FALSE) {
 
   # CORRECTIONS ----------------------------------------------------------------
 
-    if (subtype == "enduse") {
+  if (subtype == "enduse") {
 
-      # Taken from EDGE-B by Antoine Levesque:
-      # "ETP electricity demand is twice as high (!) as in the IEA data,
-      # I reduce the appliances and lighting and cooling demand shares as a result."
+    # Taken from EDGE-B by Antoine Levesque:
+    # "ETP electricity demand is twice as high (!) as in the IEA data,
+    # I reduce the appliances and lighting and cooling demand shares as a result."
 
-      if (isTRUE(feOnly)) {
-        share <- etpFilter %>%
-          droplevels() %>%
-          quitte::factor.data.frame()
-      }
-
-      shareCorr <- share %>%
-        mutate(value = ifelse(.data[["region"]] == "MEX" &
-                                .data[["enduse"]] %in% c("appliances", "lighting"),
-                              .data[["value"]] *  0.6,
-                              .data[["value"]])) %>%
-        mutate(value = ifelse(.data[["region"]] == "MEX" &
-                                .data[["enduse"]] %in% c("space_cooling"),
-                              .data[["value"]] *  0.6,
-                              .data[["value"]])) %>%
-        mutate(value = ifelse(.data[["region"]] %in% c("RUS", "IND") &
-                                .data[["enduse"]] %in% c("appliances", "lighting", "space_cooling"),
-                              .data[["value"]]  * 0.85,
-                              .data[["value"]])) %>%
-        mutate(value = ifelse(.data[["region"]] == "USA" &
-                                .data[["enduse"]] %in% c("appliances", "lighting"),
-                              .data[["value"]]  * 0.85,
-                              .data[["value"]]))
-
-      if (isFALSE(feOnly)) {
-        # re-normalize data
-        share <- shareCorr %>%
-          group_by(across(all_of(c("region", "period")))) %>%
-          mutate(value = proportions(.data[["value"]])) %>%
-          ungroup()
-      }
+    if (isTRUE(feOnly)) {
+      share <- etpFilter %>%
+        droplevels() %>%
+        quitte::factor.data.frame()
     }
+
+    shareCorr <- share %>%
+      mutate(value = ifelse(.data[["region"]] == "MEX" &
+                              .data[["enduse"]] %in% c("appliances", "lighting"),
+                            .data[["value"]] *  0.6,
+                            .data[["value"]])) %>%
+      mutate(value = ifelse(.data[["region"]] == "MEX" &
+                              .data[["enduse"]] %in% c("space_cooling"),
+                            .data[["value"]] *  0.6,
+                            .data[["value"]])) %>%
+      mutate(value = ifelse(.data[["region"]] %in% c("RUS", "IND") &
+                              .data[["enduse"]] %in% c("appliances", "lighting", "space_cooling"),
+                            .data[["value"]]  * 0.85,
+                            .data[["value"]])) %>%
+      mutate(value = ifelse(.data[["region"]] == "USA" &
+                              .data[["enduse"]] %in% c("appliances", "lighting"),
+                            .data[["value"]]  * 0.85,
+                            .data[["value"]]))
+
+    if (isFALSE(feOnly)) {
+      # re-normalize data
+      share <- shareCorr %>%
+        group_by(across(all_of(c("region", "period")))) %>%
+        mutate(value = proportions(.data[["value"]])) %>%
+        ungroup()
+    } else {
+      etpFilter <- shareCorr
+    }
+  }
 
 
 
   # OUTPUT ---------------------------------------------------------------------
 
-    # return only FE data
-    if (isTRUE(feOnly)) {
-      feData <- shareCorr %>%
-        as.quitte() %>%
-        mutate(value = .data[["value"]] * PJ2EJ,
-               unit = "EJ") %>%
-        select("region", "period", "unit", shareOf, "value") %>%
-        as.magpie()
-
-      return(list(x = feData,
-                  unit = "EJ",
-                  description = "FE of carrier or end use in buildings demand in EJ"))
-    }
-
-
-    # Convert to Magpie Object
-    share <- share %>%
-      droplevels() %>%
-      as.magpie(spatial = 1) %>%
+  # return only FE data
+  if (isTRUE(feOnly)) {
+    feData <- etpFilter %>%
+      as.quitte() %>%
+      mutate(value = .data[["value"]] * PJ2EJ,
+             unit = "EJ") %>%
+      select("region", "period", "unit", shareOf, "value") %>%
+      as.magpie() %>%
       toolCountryFill(verbosity = 0)
 
-    regShare <- regShare %>%
-      as.magpie(spatial = 1) %>%
-      collapseDim() %>%
-      toolCountryFill(1, verbosity = 0)
-
-
-    # Generate Output
-    return(list(x = share,
-                weight = regShare,
-                unit = "1",
+    return(list(x = feData,
+                unit = "EJ/yr",
                 min = 0,
-                max = 1,
-                description = "Share of carrier or end use in buildings demand"))
-}
+                description = "FE of carrier or end use in buildings demand in EJ"))
+  }
 
+
+  # Convert to Magpie Object
+  share <- share %>%
+    droplevels() %>%
+    as.magpie(spatial = 1) %>%
+    toolCountryFill(verbosity = 0)
+
+  regShare <- regShare %>%
+    as.magpie(spatial = 1) %>%
+    collapseDim() %>%
+    toolCountryFill(1, verbosity = 0)
+
+
+  # Generate Output
+  return(list(x = share,
+              weight = regShare,
+              unit = "1",
+              min = 0,
+              max = 1,
+              description = "Share of carrier or end use in buildings demand"))
+}

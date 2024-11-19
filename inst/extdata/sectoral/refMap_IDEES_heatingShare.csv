@@ -1,0 +1,11 @@
+variable,.variableOriginal,.variableTotal,.variable_Brick,hs,.comment
+Solids,Residential|Stock of households|Space heating|Solids,Residential|Stock of households|Space heating,v_stock/v_stock,sobo,
+Liquids,Residential|Stock of households|Space heating|Liquified petroleum gas (LPG),Residential|Stock of households|Space heating,v_stock/v_stock,libo,
+Liquids,Residential|Stock of households|Space heating|Gas/Diesel oil incl_ biofuels (GDO),Residential|Stock of households|Space heating,v_stock/v_stock,libo,
+Gases incl_ biogas,Residential|Stock of households|Space heating|Gases incl_ biogas,Residential|Stock of households|Space heating,v_stock/v_stock,gabo,
+Biomass and wastes,Residential|Stock of households|Space heating|Biomass and wastes,Residential|Stock of households|Space heating,v_stock/v_stock,biom,
+#Geothermal energy,Residential|Stock of households|Space heating|Geothermal energy,Residential|Stock of households|Space heating,v_stock/v_stock,,not implemented
+Derived heat,Residential|Stock of households|Space heating|Derived heat,Residential|Stock of households|Space heating,v_stock/v_stock,dihe,
+Advanced electric heating,Residential|Stock of households|Space heating|Advanced electric heating,Residential|Stock of households|Space heating,v_stock/v_stock,ehp1,
+Conventional electric heating,Residential|Stock of households|Space heating|Conventional electric heating,Residential|Stock of households|Space heating,v_stock/v_stock,reel,
+#Circulation (no),Residential|Stock of households|Space heating|Circulation (no),Residential|Stock of households|Space heating,v_stock/v_stock,,ignored

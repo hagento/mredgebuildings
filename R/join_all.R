@@ -15,7 +15,7 @@
 #'
 #' @importFrom dplyr left_join right_join full_join anti_join semi_join
 
-join_all <- function(x,
+join_all <- function(x, # nolint object_name_linter
                      y,
                      by = NULL,
                      .direction = "left",

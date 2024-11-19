@@ -17,7 +17,7 @@
 #'
 #' @importFrom quitte as.quitte
 #' @importFrom dplyr filter mutate group_by summarise across all_of select %>%
-#' @importFrom rlang .data
+#'   .data
 #' @importFrom madrat toolCountry2isocode toolCountryFill
 #' @importFrom magclass as.magpie
 #' @export
@@ -54,7 +54,8 @@ convertDaioglou <- function(x, subtype = "households.specific floor space") {
       filter(.data[["source"]] %in% sourceUN) %>%
       mutate(source = as.character(.data[["source"]])) %>%
       group_by(across(all_of(
-        c("region", "period", "demographic", "quintile")))) %>%
+        c("region", "period", "demographic", "quintile")
+      ))) %>%
       summarise(value = mean(.data[["value"]]),
                 source = ifelse(length(.data[["source"]]) > 1,
                                 "UN habitat (mean)",
@@ -68,7 +69,7 @@ convertDaioglou <- function(x, subtype = "households.specific floor space") {
     # remove specific data points
     data <- filter(data,
       !paste(.data[["region"]], .data[["demographic"]], .data[["period"]],
-               .data[["source"]], sep = "-") %in%
+             .data[["source"]], sep = "-") %in%
         c("CHN-Urban-2007-National Bureau of Statistics of China",
           "CHN-Rural-2007-National Bureau of Statistics of China, GINI from WIIDC2",
           "CHN-Rural-2004-National Bureau of Statistics of China, GINI from WIIDC2"),
@@ -78,12 +79,14 @@ convertDaioglou <- function(x, subtype = "households.specific floor space") {
       !(.data[["region"]] == "CAN" & .data[["period"]] == 1990 &
           .data[["source"]] == "Natural Resrouces Canada, WDI"),
       !(.data[["region"]] == "GBR" & .data[["period"]] == 1998 &
-          grepl("Department for Energy and Climate Change", .data[["source"]])))
+          grepl("Department for Energy and Climate Change", .data[["source"]]))
+    )
 
     # take mean of remaining duplicates (GBR, 1998)
     data <- data %>%
       group_by(across(all_of(
-        c("region", "period", "demographic", "quintile")))) %>%
+        c("region", "period", "demographic", "quintile")
+      ))) %>%
       summarise(value = mean(.data[["value"]]), .groups = "drop")
 
   } else if (grepl("^share_", subtype)) {

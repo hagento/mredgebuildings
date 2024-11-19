@@ -1,0 +1,22 @@
+hpType,heatingHP,spaceHeatingHP,technologyBRICK
+District heating,TRUE,FALSE,
+Exhaust air HP - air / air,TRUE,FALSE,
+Exhaust air HP - air / water,TRUE,FALSE,
+Heating only HP - air / water,TRUE,TRUE,ehp1
+Heating only HP - brine / water,TRUE,TRUE,ehp1
+Heating only HP - direct expansion / condensation,TRUE,TRUE,ehp1
+Heating only HP - direct expansion / water,TRUE,TRUE,ehp1
+Heating only HP - other,TRUE,TRUE,ehp1
+Heating only HP - water / water,TRUE,TRUE,ehp1
+Hybrid HP,TRUE,TRUE,ehp1
+Industrial HP - air source,TRUE,FALSE,
+Industrial HP - ground source,TRUE,FALSE,
+Industrial HP - water source,TRUE,FALSE,
+Other,TRUE,TRUE,ehp1
+Reversible HP - air / air,TRUE,TRUE,ehp1
+Reversible HP - air / water,TRUE,TRUE,ehp1
+Reversible HP - brine / water,TRUE,TRUE,ehp1
+Reversible HP - VRF,TRUE,TRUE,ehp1
+Sanitary hot water HP - exhaust air,FALSE,FALSE,
+Sanitary hot water HP - water heaters,FALSE,FALSE,
+Thermally driven HP,TRUE,FALSE,
