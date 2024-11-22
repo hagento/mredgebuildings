@@ -450,7 +450,6 @@ cfac <- function(t, type, params = NULL) {
 #' @importFrom terra nlyr
 
 smooth <- function(r, weight) {
-  # smooth bait over preceding two days with smoothing parameter sigma
   print("smooth")
 
   # one day indented

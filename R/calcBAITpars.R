@@ -10,6 +10,7 @@
 #' buildig upon the non-linear relation between water vapor pressure and temperature.
 #'
 #' @param model specify GCM responsible for data input
+#' @param cacheDir directory containing pre-calculated function output
 #'
 #' @return terra SpatRaster covering one regression parameter per layer per cell
 #'
@@ -21,7 +22,29 @@
 #' @importFrom madrat readSource
 
 
-calcBAITpars <- function(model = "GFDL-ESM4") {
+calcBAITpars <- function(model = "GFDL-ESM4",
+                         cacheDir = NULL) {
+
+  # CHECK CACHE-----------------------------------------------------------------
+
+  if (!is.null(cacheDir)) {
+    fpath <- list.files(cacheDir, pattern = model, full.names = TRUE) %>%
+      unlist()
+
+    if (file.exists(fpath)) {
+      print(paste0("Load parameters from cache: ", basename(fpath)))
+      regPars <- rast(fpath)
+
+      return(list(x = regPars,
+                  class = "SpatRaster",
+                  unit = "(unit)",
+                  description = "Regression parameters for calcHDDCDD"))
+    }
+    else {
+      print("BAITpars file not in given cache directory - will be re-calculated.")
+    }
+  }
+
 
   # READ-IN DATA----------------------------------------------------------------
 

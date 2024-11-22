@@ -54,8 +54,15 @@ readISIMIPbuildings <- function(subtype) {
     else if (any(sapply(baitVars, grepl, x = subtype))) {
       subSplit <- str_split(subtype, "_") %>% unlist()
 
-      vars[["variable"]] <- subSplit[[5]]
-      vars[["scenario"]] <- subSplit[[4]]
+      # observations have a shorter file name
+      if (grepl("obsclim", subtype)) {
+        vars[["variable"]] <- subSplit[[3]]
+        vars[["scenario"]] <- "historical"
+      } else {
+        vars[["variable"]] <- subSplit[[5]]
+        vars[["scenario"]] <- subSplit[[4]]
+      }
+
       vars[["model"]]    <- subSplit[[1]]
 
       # raster data will be split into individual years
@@ -65,8 +72,13 @@ readISIMIPbuildings <- function(subtype) {
           as.numeric()
 
         # temporal range of data
-        vars[["yStart"]] <- subSplit[[8]]
-        vars[["yEnd"]]   <- subSplit[[9]]
+        if (grepl("obsclim", subtype)) {
+          vars[["yStart"]] <- subSplit[[6]]
+          vars[["yEnd"]]   <- subSplit[[7]]
+        } else {
+          vars[["yStart"]] <- subSplit[[8]]
+          vars[["yEnd"]]   <- subSplit[[9]]
+        }
 
         # year of interest
         vars[["year"]] <- seq(vars[["yStart"]] %>%
@@ -107,6 +119,7 @@ readISIMIPbuildings <- function(subtype) {
 
 
   # PROCESS DATA----------------------------------------------------------------
+
   vars <- splitSubtype(subtype)
 
   # region mask
