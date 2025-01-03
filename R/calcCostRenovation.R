@@ -9,13 +9,12 @@
 #'
 #' @author Robin Hasse
 #'
-#' @importFrom madrat calcOutput
+#' @importFrom madrat calcOutput toolGetMapping
 #' @importFrom quitte as.quitte interpolate_missing_periods
 #' @importFrom magclass as.magpie
 #' @importFrom dplyr %>% .data mutate select left_join filter select cross_join
 #'   group_by ungroup
 #' @importFrom tidyr pivot_wider
-#' @importFrom brick getBrickMapping
 #' @export
 
 calcCostRenovation <- function(energyLadder = FALSE) {
@@ -28,7 +27,8 @@ calcCostRenovation <- function(energyLadder = FALSE) {
   # quadratically increasing factor to increase shell cost for old buildings
   vinFactorMax <- 1.5
   vinFactorStart <- 2020
-  vinFactor <- getBrickMapping("vintage.csv") %>%
+  vinFactor <- toolGetMapping("vintage.csv",
+                              type = "sectoral", where = "brick") %>%
     mutate(avgYear = (.data[["from"]] + .data[["to"]]) / 2,
            factor = ifelse(.data[["avgYear"]] < vinFactorStart,
                            (vinFactorStart - .data[["avgYear"]]) ^ 2,
@@ -50,7 +50,8 @@ calcCostRenovation <- function(energyLadder = FALSE) {
   ## Building shell ====
 
   ### relative demand ####
-  relDem <- getBrickMapping("buildingShell.csv") %>%
+  relDem <- toolGetMapping("buildingShell.csv",
+                           type = "sectoral", where = "brick") %>%
     select("bs", "relDem") %>%
     unique()
 
@@ -103,7 +104,8 @@ calcCostRenovation <- function(energyLadder = FALSE) {
   ### renovation transitions ####
 
   # heating systems hierarchy
-  heatingLadder <- getBrickMapping("heatingSystem.csv") %>%
+  heatingLadder <- toolGetMapping("heatingSystem.csv",
+                                  type = "sectoral", where = "brick") %>%
     select("hs", ladder = "energyLadder")
 
   # heating system states

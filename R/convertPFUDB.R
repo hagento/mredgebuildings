@@ -14,6 +14,7 @@
 #' @importFrom tidyr unite
 #' @importFrom quitte as.quitte aggregate_map factor.data.frame
 #' @importFrom magclass as.magpie
+#' @importFrom madrat calcOutput toolGetMapping
 #' @export
 
 
@@ -27,7 +28,8 @@ convertPFUDB <- function(x) {
     as.quitte()
 
   # Get Mapping
-  regionmapping <- toolGetMapping("pfu_regionmapping.csv", "regional", "mredgebuildings")
+  regionmapping <- toolGetMapping("pfu_regionmapping.csv",
+                                  type = "regional", where = "mredgebuildings")
 
   # Get GDP per Cap
   dfGDPpop <- calcOutput("GDPPop", aggregate = FALSE) %>%

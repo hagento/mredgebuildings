@@ -7,7 +7,6 @@
 #'
 #' @author Robin Hasse
 #'
-#' @importFrom brick getBrickMapping
 #' @importFrom madrat toolGetMapping readSource toolCountryFill
 #' @importFrom magclass as.magpie getSets<- setNames mbind dimSums
 #'   time_interpolate
@@ -23,7 +22,8 @@ calcHeatingSystem <- function(subtype = c("Purchasing cost", "Efficiency")) {
   subtype <- match.arg(subtype)
 
   # all heating technologies
-  hsMap <- getBrickMapping("heatingSystem.csv")
+  hsMap <- toolGetMapping("heatingSystem.csv",
+                          type = "sectoral", where = "brick")
 
   # map heating technologies
   euRefMap <- toolGetMapping("technologyMapping_EU_ReferenceScenario.csv",

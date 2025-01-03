@@ -15,7 +15,8 @@
 
 calcRenDepth <- function() {
 
-  bsMap <- toolGetMapping("buildingShell.csv", "sectoral", "brick")
+  bsMap <- toolGetMapping("buildingShell.csv",
+                          type = "sectoral", where = "brick")
 
   renDepth <- expand.grid(bs = bsMap[["bs"]],
                           bsr = c(bsMap[["bs"]], "0")) %>%

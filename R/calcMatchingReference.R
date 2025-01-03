@@ -21,7 +21,7 @@ calcMatchingReference <- function(subtype) {
 
   # reference mapping
   refMap <- toolGetMapping(paste0("refMap_", subtype, ".csv"),
-                           "sectoral", "mredgebuildings",
+                           type = "sectoral", where = "mredgebuildings",
                            returnPathOnly = TRUE) %>%
     read.csv(comment.char = "#")
 

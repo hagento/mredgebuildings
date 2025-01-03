@@ -12,7 +12,7 @@
 convertDeetman2020 <- function(x, subtype) {
 
   regionmapping <- toolGetMapping("regionmappingDeetman2020.csv",
-                                  "regional", "mredgebuildings")
+                                  type = "regional", where = "mredgebuildings")
 
   switch(subtype,
     residential = toolAggregate(x, regionmapping),

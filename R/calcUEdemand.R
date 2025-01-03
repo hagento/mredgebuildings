@@ -7,20 +7,23 @@
 #' @importFrom dplyr select right_join group_by across all_of summarise mutate
 #'   cross_join
 #' @importFrom quitte as.quitte
-#' @importFrom brick getBrickMapping
 #' @export
 
 calcUEdemand <- function() {
 
   # map Hotmaps vintages
-  vinMap <- toolGetMapping("vintageMapping_Hotmaps.csv", "sectoral",
-                           "mredgebuildings") %>%
+  vinMap <- toolGetMapping("vintageMapping_Hotmaps.csv",
+                           type = "sectoral", where = "mredgebuildings") %>%
     select("vin", "vinHotmaps")
 
   # map Hotmaps building types
-  typMap <- toolGetMapping("buildingTypeMapping_Hotmaps.csv", "sectoral",
-                           "mredgebuildings") %>%
+  typMap <- toolGetMapping("buildingTypeMapping_Hotmaps.csv",
+                           type = "sectoral", where = "mredgebuildings") %>%
     select("typ", "typHotmaps")
+
+  # building shell map
+  bsMap <- toolGetMapping("buildingShell.csv",
+                          type = "sectoral", where = "brick")
 
   # Useful energy demand for space heating (kWh/yr/m2)
   ueDem <- readSource("Hotmaps") %>%
@@ -30,14 +33,18 @@ calcUEdemand <- function() {
     right_join(typMap, by = c(building = "typHotmaps")) %>%
     right_join(vinMap, by = c(bage = "vinHotmaps"),
                relationship = "many-to-many") %>%
-
     select("region", "typ", "vin", "value") %>%
     group_by(across(-all_of(c("value")))) %>%
     summarise(value = mean(.data[["value"]]), .groups = "drop")
 
+  # scale demand such that average relative demand is 1
+  relDem <- bsMap %>%
+    select("bs", "relDem", "initShare") %>%
+    mutate(relDem = .data[["relDem"]] /
+             sum(.data[["initShare"]] * .data[["relDem"]])) %>%
+    select(-"initShare")
+
   # add dimension: building shell
-  relDem <- getBrickMapping("buildingShell.csv") %>%
-    select("bs", relDem)
   ueDem <- ueDem %>%
     cross_join(relDem) %>%
     mutate(value = .data[["value"]] * .data[["relDem"]]) %>%

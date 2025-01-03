@@ -57,23 +57,26 @@ calcRenovationCostModel <- function() {
     select(-"model", -"scenario", -"period")
 
   # average income in reporting period: 2014 - 2017
-  pop <- calcOutput("PopulationPast", aggregate = FALSE) %>%
+  pop <- calcOutput("Population", aggregate = FALSE) %>%
+    mselect(variable = "pop_SSP2") %>%
     as.quitte() %>%
     select(-"model", -"scenario") %>%
-    mutate(unit = "million cap")
-  gdp <- calcOutput("GDPPast", aggregate = FALSE) %>%
+    mutate(variable = "population", unit = "million cap")
+  gdppop <- calcOutput("GDPpc", aggregate = FALSE, average2020 = FALSE) %>%
+    mselect(variable = "gdppc_SSP2") %>%
     as.quitte() %>%
-    select(-"model", -"scenario")
-  gdppop <- rbind(gdp, pop) %>%
-    calc_addVariable(gdppop = "`gdp in constant 2005 Int$PPP` / `population`",
-                     units = "USD2005/cap", only.new = TRUE)
-  gdppopAvg <- rbind(gdp, pop) %>%
+    select(-"model", -"scenario") %>%
+    mutate(variable = "gdppop", unit = "USD2017/cap")
+  gdppopAvg <- rbind(gdppop, pop) %>%
+    select(-"unit") %>%
     filter(.data[["period"]] %in% periodsReport) %>%
-    group_by(across(-all_of(c("period", "value")))) %>%
-    summarise(value = mean(.data[["value"]]), .groups = "drop") %>%
-    ungroup() %>%
-    calc_addVariable(gdppop = "`gdp in constant 2005 Int$PPP` / `population`",
-                     units = "USD2005/cap", only.new = TRUE)
+    pivot_wider(names_from = "variable") %>%
+    group_by(.data[["region"]]) %>%
+    summarise(value = sum(proportions(.data[["population"]]) * .data[["gdppop"]]),
+              variable = "gdppop",
+              unit = "USD2017/cap",
+              .groups = "drop") %>%
+    ungroup()
 
   # ratio of SFH
   typeCode <- c(nbrmpr_1 = "SFH",

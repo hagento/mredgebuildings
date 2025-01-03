@@ -26,8 +26,8 @@ calcCostConstruction <- function() {
   )
 
   # map regions
-  mapMessage <- toolGetMapping("regionmappingMessageIX.csv", "regional",
-                               "mredgebuildings")
+  mapMessage <- toolGetMapping("regionmappingMessageIX.csv",
+                               type = "regional", where = "mredgebuildings")
   floorCost <- floorCost %>%
     left_join(mapMessage %>% select(region = "X2regions", "CountryCode"),
               by = "region", relationship = "many-to-many") %>%

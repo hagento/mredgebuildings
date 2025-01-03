@@ -69,7 +69,7 @@ calcShares <- function(subtype = c("carrier_nonthermal",
 
   # READ-IN DATA ---------------------------------------------------------------
 
-  #--- Main Datasets
+  ## Main Datasets ====
 
   # Shares
 
@@ -177,6 +177,7 @@ calcShares <- function(subtype = c("carrier_nonthermal",
   }
 
 
+
   # PROCESS DATA ---------------------------------------------------------------
 
   # Adjust ETP Mapping
@@ -237,8 +238,7 @@ calcShares <- function(subtype = c("carrier_nonthermal",
     if (feOnly) {
       data  <- feETPfull
     } else {
-      regFE <- feETPfull %>%
-        mutate(value = replace_na(.data[["value"]], 0))
+      regFE <- feETPfull
     }
   }
 

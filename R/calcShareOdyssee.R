@@ -18,7 +18,7 @@
 #' @returns MAgPIE object with historic shares
 #'
 #' @importFrom magclass mbind as.magpie
-#' @importFrom madrat readSource toolCountryFill
+#' @importFrom madrat readSource toolCountryFill toolGetMapping
 #' @importFrom quitte as.quitte revalue.levels
 #' @importFrom dplyr filter %>% mutate group_by across all_of left_join
 #' summarise .data syms bind_rows pull

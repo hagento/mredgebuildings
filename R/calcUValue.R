@@ -2,23 +2,23 @@
 #'
 #' @author Robin Hasse
 #'
-#' @importFrom madrat readSource
+#' @importFrom madrat readSource toolGetMapping
 #' @importFrom magclass mselect getItems
 #' @importFrom quitte inline.data.frame as.quitte
 #' @importFrom dplyr .data %>% select filter right_join left_join group_by
 #'   across all_of summarise
-#' @importFrom brick getBrickMapping
 #' @export
 
 calcUValue <- function() {
 
   # map Hotmaps vintages
-  vinMap <- toolGetMapping("vintageMapping_Hotmaps.csv", "sectoral",
-                           "mredgebuildings") %>%
+  vinMap <- toolGetMapping("vintageMapping_Hotmaps.csv",
+                           type = "sectoral", where = "mredgebuildings") %>%
     select("vin", "vinHotmaps")
 
   # map Hotmaps building types
-  typMap <- getBrickMapping("buildingType.csv") %>%
+  typMap <- toolGetMapping("buildingType.csv",
+                           type = "sectoral",  where = "brick") %>%
     select("typ", building = "typHotmaps")
 
   # Simple average of U-values across building components

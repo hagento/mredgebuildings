@@ -5,8 +5,9 @@
 #' @author Robin Hasse
 #'
 #' @importFrom magclass add_dimension mbind getItems getItems<- getSets<-
-#'   time_interpolate
+#'   time_interpolate getSets
 #' @importFrom madrat calcOutput
+#' @importFrom utils tail
 #' @export
 
 calcPopulationBuildings <- function() {
@@ -23,7 +24,7 @@ calcPopulationBuildings <- function() {
   # assume building type shares according to
   # TODO: improve split by building type # nolint: todo_comment_linter
   typShare <- calcOutput("BuildingStock", aggregate = FALSE)[, , "dwellings"]
-  typShare <- dimSums(typShare, c("variable", "loc", "vin", "hs"), na.rm = TRUE)
+  typShare <- dimSums(typShare, setdiff(tail(getSets(typShare, -2)), "typ"), na.rm = TRUE)
   typShare <- typShare / dimSums(typShare)
   typShare <- toolCountryFillAvg(typShare, verbosity = 2)
 

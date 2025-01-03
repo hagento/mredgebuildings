@@ -25,7 +25,7 @@ calcFloorspacePerCap <- function() {
   # scale floor space to match stock in 2000
   stock <- calcOutput("BuildingStock", aggregate = FALSE) %>%
     mselect(variable = "floor") %>%
-    dimSums(c("variable", "vin", "hs")) %>%
+    dimSums(c("variable", "vin", "hs", "bs")) %>%
     time_interpolate(t, extrapolation_type = "constant") %>%
     toolCountryFillAvg(verbosity = 2)
   getSets(stock)[2] <- getSets(fs)[2]

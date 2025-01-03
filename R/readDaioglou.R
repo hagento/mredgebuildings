@@ -91,6 +91,8 @@ readDaioglou <- function(subtype = "households.specific floor space") {
       mutate(population = asNum(.data[["population"]]),
              `population density` = asNum(.data[["population density"]]),
              `household expenditure` = asNum(.data[["household expenditure"]]),
+             # TODO: Hack to remove non-UTF-8 character. Should solve this properly. #nolint
+             source = iconv(.data[["source"]], "UTF-8", "UTF-8", sub = ""),
              source = gsub("\\.", "", .data[["source"]]))
   }
   data <- data %>%

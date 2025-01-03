@@ -166,7 +166,7 @@ calcHeatingSystemSales <- function() {
   ## To all regions ====
   stock <- calcOutput("BuildingStock", aggregate = FALSE) %>%
     mselect(variable = "dwellings") %>%
-    dimSums(c("variable", "typ", "loc", "vin")) %>%
+    dimSums(c("variable", "typ", "loc", "vin", "bs")) %>%
     .removeNADims("region") %>%
     .time_interpolate(t, 0.3)
 

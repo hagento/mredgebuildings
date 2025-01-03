@@ -47,13 +47,15 @@ calcPFUDB <- function() {
   # PARAMETERS -----------------------------------------------------------------
 
   # Rename Carrier Items
-  carriersnames <- toolGetMapping("carrierMap_PFUDB.csv", "sectoral",
-                                  "mredgebuildings") %>%
+  carriersnames <- toolGetMapping("carrierMap_PFUDB.csv",
+                                  type = "sectoral",
+                                  where = "mredgebuildings") %>%
     pull("EDGE", "PFUDB")
 
   # Enduse-Carrier combinations which will be systematically excluded
-  exclude <- toolGetMapping("excludeEnduseCarrier.csv", "sectoral",
-                            "mredgebuildings")
+  exclude <- toolGetMapping("excludeEnduseCarrier.csv",
+                            type = "sectoral",
+                            where = "mredgebuildings")
 
   # fridge electricity shares (see calcShares)
   fridgeShare <- rbind(data.frame(RegionCode = "USA", share  = 0.12),

@@ -5,7 +5,7 @@
 #' @author Robin Hasse
 #'
 #' @importFrom magclass complete_magpie mselect dimSums mbind
-#' @importFrom madrat toolAggregate readSource
+#' @importFrom madrat toolAggregate readSource toolGetMapping
 #' @export
 
 calcHeatingSystemReplacement <- function() {

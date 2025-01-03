@@ -7,7 +7,7 @@
 #'
 #' @author Robin Hasse
 #'
-#' @importFrom madrat readSource
+#' @importFrom madrat readSource toolGetMapping
 #' @importFrom magclass dimSums mselect
 #' @importFrom dplyr %>% .data filter
 #' @export

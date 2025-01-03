@@ -13,8 +13,7 @@
 #'
 #' @author Robin Hasse
 #'
-#' @importFrom brick getBrickMapping
-#' @importFrom madrat readSource calcOutput
+#' @importFrom madrat readSource calcOutput toolGetMapping
 #' @importFrom magclass add_dimension as.magpie mselect getSets mbind
 #' @importFrom quitte inline.data.frame
 #' @importFrom dplyr .data %>% mutate filter everything
@@ -162,7 +161,8 @@ calcLifetimeParams <- function(subtype) {
                 mutate(hs = "sobo"))
 
       # all technologies included?
-      hs <- getBrickMapping("heatingSystem.csv")
+      hs <- toolGetMapping("heatingSystem.csv",
+                           type = "sectoral", where = "brick")
       params <- params %>%
         right_join(hs["hs"], by = "hs")
       if (any(is.na(params))) {
@@ -172,7 +172,8 @@ calcLifetimeParams <- function(subtype) {
 
 
       ### map to building types ####
-      typMap <- getBrickMapping("buildingType.csv")
+      typMap <- toolGetMapping("buildingType.csv",
+                               type = "sectoral", where = "brick")
       typMap <- stats::setNames(typMap[["subsector"]], typMap[["typ"]])
 
       params <- params %>%

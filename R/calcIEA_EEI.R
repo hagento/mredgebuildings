@@ -12,7 +12,7 @@
 #'
 #' @author Hagen Tockhorn
 #'
-#' @importFrom madrat readSource
+#' @importFrom madrat readSource toolGetMapping calcOutput
 #' @importFrom dplyr filter group_by across all_of summarise mutate select rename
 #' @importFrom tidyr replace_na
 #' @importFrom quitte revalue.levels
