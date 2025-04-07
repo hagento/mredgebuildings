@@ -19,13 +19,15 @@
 
 fullEDGEBUILDINGS <- function(rev = 0) {
 
-  # socio-economic data --------------------------------------------------------
+  # Scenarios: High India for population and gdp, but not for urbanization -----
+  scensIndia <- c("SSPs", "SDPs", "SSP2IndiaHigh")
   scenarios <- c("SSPs", "SDPs")
-  calcOutput("Population",  scenario = scenarios, naming = "scenario", file = "f_pop.cs4r")
+
+  # socio-economic data --------------------------------------------------------
+  calcOutput("Population",  scenario = scensIndia, naming = "scenario", file = "f_pop.cs4r")
   calcOutput("GDP",
-             scenario = scenarios,
+             scenario = scensIndia,
              naming = "scenario",
-             unit = "constant 2005 Int$PPP",
              average2020 = FALSE,
              file = "f_gdp.cs4r")
   calcOutput("Surface",                           file = "f_surface.cs4r")

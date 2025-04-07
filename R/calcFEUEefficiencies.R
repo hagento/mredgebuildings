@@ -41,10 +41,7 @@ calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
   gdppop <- calcOutput("GDPpc",
                        scenario = "SSP2",
                        average2020 = FALSE,
-                       unit = "constant 2005 Int$PPP",
-                       aggregate = FALSE,
-                       years = 1960:2022) %>%
-    setNames("gdppop in constant 2005 Int$PPP") %>%
+                       aggregate = FALSE) %>%
     as.quitte()
 
   # Efficiency regression parameters
@@ -157,9 +154,11 @@ calcFEUEefficiencies <- function(gasBioEquality = TRUE) {
                 by = c("equalTo" = "variable", "period", "region"),
                 suffix = c("", ".target")) %>%
       mutate(value = ifelse(!is.na(.data[["equalTo"]]), .data[["value.target"]], .data[["value"]])) %>%
-      select(-"equalTo", -"value.target") %>%
-      separate(col = "variable", into = c("enduse", "carrier"), sep = "\\.")
+      select(-"equalTo", -"value.target")
   }
+
+  histEfficiencies <- histEfficiencies %>%
+    separate(col = "variable", into = c("enduse", "carrier"), sep = "\\.")
 
 
   # FE weights for regional aggregation
