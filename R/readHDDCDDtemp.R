@@ -12,8 +12,8 @@
 #' @export
 
 readHDDCDDtemp <- function() {
-  c("hddcddBAITnoCC_std2K.csv",
-    "hddcddBAITssp2_std2K.csv") %>%
+  c("hddcddBAITnoCC_std2K_ISO.csv",
+    "hddcddBAITssp2_std2K_ISO.csv") %>%
     lapply(read.csv) %>%
     do.call(what = rbind) %>%
     group_by(across(-all_of("value"))) %>%
