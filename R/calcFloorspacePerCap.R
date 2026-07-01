@@ -17,7 +17,7 @@ calcFloorspacePerCap <- function(scenarios, granularity = NULL) {
   # to calls of the individual scenarios.
   scenarios <- mrdrivers::toolReplaceShortcuts(scenarios) %>% unique()
 
-  # TODO: get rid of the mrremind dependency # nolint: todo_comment_linter
+  # TODO: get rid of this dependency # nolint: todo_comment_linter
   fs <- readSource("EdgeBuildings", subtype = "Floorspace", subset = scenarios)
 
   t <- getItems(fs, 2)
